@@ -1,0 +1,11 @@
+{
+  "name": "plazafija",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node test.mjs",
+    "dev": "node build.mjs && npx wrangler pages dev dist",
+    "deploy": "node build.mjs && npx wrangler pages deploy dist --project-name plazafija"
+  }
+}
