@@ -78,3 +78,15 @@ export function accessCode() {
 export async function body(request) {
   try { return await request.json(); } catch { return {}; }
 }
+
+// Aviso al Telegram del titular (variables TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID). Nunca hace fallar la petición.
+export async function avisarTelegram(env, text) {
+  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) return false;
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text, disable_web_page_preview: true })
+    });
+    return r.ok;
+  } catch { return false; }
+}

@@ -174,3 +174,19 @@ test("visita: con mucho tráfico avisa solo cada 10 visitas", async () => {
   assert.equal(calls.length, 1);
   assert.match(JSON.parse(calls[0].opts.body).text, /nº 160 de hoy/);
 });
+
+test("claim avisa por Telegram de la suscripción nueva una sola vez", async () => {
+  const calls = mockStripe([
+    [/checkout\/sessions\/cs_test_2/, () => ({ id: "cs_test_2", livemode: false, amount_total: 2900, status: "complete", subscription: { status: "active", items: { data: [{ price: { recurring: { interval: "year" } } }] } }, customer: { id: "cus_7", email: "carlos@gmail.com", metadata: { access_code: "ABCD-2345" } } })],
+    [/api\.telegram\.org/, () => ({ ok: true })]
+  ]);
+  const env = { ...ENV, ...TG, VISITAS: kv() };
+  for (let i = 0; i < 2; i++) assert.equal((await claim.onRequestPost({ request: req("claim", { session_id: "cs_test_2" }), env })).status, 200);
+  const tg = calls.filter((c) => /telegram/.test(c.url));
+  assert.equal(tg.length, 1);
+  const text = JSON.parse(tg[0].opts.body).text;
+  assert.match(text, /Nueva suscripción anual · 29,00 €/);
+  assert.match(text, /ca\*\*\*@gmail\.com/);
+  assert.match(text, /PRUEBA/);
+  assert.match(text, /Suscripciones registradas: 1/);
+});
