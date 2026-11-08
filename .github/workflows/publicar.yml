@@ -40,7 +40,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          buscar() { npx --yes wrangler@3 kv namespace list 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const a=JSON.parse(s.slice(s.indexOf("[")));const n=a.find(x=>/visitas$/.test(x.title));console.log(n?n.id:"")}catch{console.log("")}})'; }
+          buscar() { npx --yes wrangler@3 kv namespace list | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const a=JSON.parse(s.slice(s.indexOf("[")));const n=a.find(x=>/^(plazafija-)?visitas$/.test(x.title));if(n)console.error("Almacén: "+n.title);console.log(n?n.id:"")}catch{console.log("")}})'; }
           id=$(buscar)
           if [ -z "$id" ]; then npx --yes wrangler@3 kv namespace create visitas || true; id=$(buscar); fi
           if [ -n "$id" ]; then
