@@ -12,6 +12,8 @@ const SITE = {
   freePerDay: 15,
   freeRatio: 3, // 1 de cada 3 preguntas es gratuita (y aparece en las páginas públicas para Google)
   // Código de verificación de Google Search Console (etiqueta HTML: solo el valor de content="...")
+  // Clave pública de IndexNow (avisa a Bing, Yandex y otros buscadores de las páginas nuevas en cada publicación)
+  indexNowKey: "97ad9d03b5a941ebaad1bc1ff95c3b04",
   googleVerification: "YEgrrXAVfYxEi9-HV_-qDhrscKqbmkbSR4CYfcGpYac",
   prices: { month: "4,99 €", year: "29 €", yearMonthly: "2,42 €" },
   // Tus datos legales (LSSI) NO van en el repositorio: se leen de las variables de Cloudflare Pages (OWNER_NAME, OWNER_NIF, OWNER_ADDRESS, OWNER_EMAIL)
@@ -240,6 +242,7 @@ for (const [slug, data] of Object.entries(legal)) out(`dist/legal/${slug}/index.
 const urls = ["/", ...Object.values(blocks).map((b) => `/tests/${b.slug}/`), ...TOOLS.map((t) => `/herramientas/${t.slug}/`), "/temario/", ...temasConPagina.map((t) => `/temario/${t.slug}/`), ...Object.keys(legal).map((s) => `/legal/${s}/`)];
 const today = new Date().toISOString().slice(0, 10);
 out("dist/sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${SITE.url}${u}</loc><lastmod>${today}</lastmod></url>`).join("\n")}\n</urlset>\n`);
+out(`dist/${SITE.indexNowKey}.txt`, SITE.indexNowKey);
 out("dist/robots.txt", `User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: ${SITE.url}/sitemap.xml\n`);
 out("dist/_headers", `/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  X-Frame-Options: DENY\n`);
 out("functions/_lib/premium-data.js", `// Generado por build.mjs. No editar: edita src/questions.js y vuelve a ejecutar el build.\nexport const PREMIUM = ${JSON.stringify(all)};\n`);

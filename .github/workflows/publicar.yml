@@ -58,3 +58,6 @@ jobs:
           fi
       - name: Publicar
         run: npx --yes wrangler@3 pages deploy dist --project-name plazafija --branch main --commit-dirty=true
+      - name: Avisar a los buscadores (IndexNow)
+        continue-on-error: true
+        run: sleep 20 && node tools/indexnow.mjs
