@@ -12,7 +12,7 @@ const SITE = {
   freePerDay: 15,
   freeRatio: 3, // 1 de cada 3 preguntas es gratuita (y aparece en las páginas públicas para Google)
   // Código de verificación de Google Search Console (etiqueta HTML: solo el valor de content="...")
-  googleVerification: "8We81wwzeLP8i78_TqSSXo4d5_-QoxXmpuWRGe4auhs",
+  googleVerification: "YEgrrXAVfYxEi9-HV_-qDhrscKqbmkbSR4CYfcGpYac",
   prices: { month: "4,99 €", year: "29 €", yearMonthly: "2,42 €" },
   // Tus datos legales (LSSI) NO van en el repositorio: se leen de las variables de Cloudflare Pages (OWNER_NAME, OWNER_NIF, OWNER_ADDRESS, OWNER_EMAIL)
   owner: { name: process.env.OWNER_NAME || "[TU NOMBRE Y APELLIDOS]", nif: process.env.OWNER_NIF || "[TU NIF]", address: process.env.OWNER_ADDRESS || "[TU DIRECCIÓN]", email: process.env.OWNER_EMAIL || "[TU EMAIL DE CONTACTO]" }
