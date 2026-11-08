@@ -56,6 +56,21 @@ jobs:
           else
             echo "::warning::Faltan los secretos TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID en GitHub: no se enviarán avisos de visitas."
           fi
+      - name: Pagos con Stripe (claves desde los secretos de GitHub)
+        continue-on-error: true
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PRICE_MONTH: ${{ secrets.STRIPE_PRICE_MONTH }}
+          STRIPE_PRICE_YEAR: ${{ secrets.STRIPE_PRICE_YEAR }}
+          TOKEN_SECRET: ${{ secrets.TOKEN_SECRET }}
+        run: |
+          faltan=""
+          for v in STRIPE_SECRET_KEY STRIPE_PRICE_MONTH STRIPE_PRICE_YEAR TOKEN_SECRET; do
+            val="${!v}"
+            if [ -n "$val" ]; then printf '%s' "$val" | npx --yes wrangler@3 pages secret put "$v" --project-name plazafija >/dev/null && echo "$v: subido"; else faltan="$faltan $v"; fi
+          done
+          case "$STRIPE_SECRET_KEY" in sk_test_*) echo "Stripe en MODO DE PRUEBA (no se cobra de verdad)";; sk_live_*) echo "Stripe en MODO REAL (se cobra de verdad)";; esac
+          if [ -n "$faltan" ]; then echo "::warning::Pagos sin activar. Faltan en GitHub:$faltan"; fi
       - name: Publicar
         run: npx --yes wrangler@3 pages deploy dist --project-name plazafija --branch main --commit-dirty=true
       - name: Avisar a los buscadores (IndexNow)
