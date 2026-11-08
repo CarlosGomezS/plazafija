@@ -18,6 +18,25 @@ export async function onRequestPost({ request, env }) {
     });
     return json({ url: session.url });
   } catch (e) {
-    return json({ error: "No se pudo iniciar el pago. Inténtalo de nuevo en unos minutos." }, 502);
+    console.error("Stripe checkout:", e.message);
+    return json({ error: "No se pudo iniciar el pago. Inténtalo de nuevo en unos minutos.", detalle: e.message }, 502);
   }
+}
+
+// Diagnóstico: abre /api/checkout en el navegador. Comprueba la clave y los precios contra Stripe (no muestra claves).
+export async function onRequestGet({ env }) {
+  const k = env.STRIPE_SECRET_KEY || "";
+  const out = {
+    clave: !k ? "falta" : k.startsWith("sk_test_") ? "secreta de PRUEBA (bien)" : k.startsWith("sk_live_") ? "secreta REAL" : k.startsWith("rk_") ? "clave restringida" : k.startsWith("pk_") ? "ERROR: es la clave publicable (pk_), hace falta la secreta (sk_)" : "formato desconocido",
+    tokenSecret: (env.TOKEN_SECRET || "").length >= 20 ? "bien" : "falta o es muy corto",
+  };
+  for (const [nombre, id] of [["precioMensual", env.STRIPE_PRICE_MONTH], ["precioAnual", env.STRIPE_PRICE_YEAR]]) {
+    if (!id) { out[nombre] = "falta"; continue; }
+    if (!/^price_/.test(id)) { out[nombre] = `ERROR: empieza por «${id.slice(0, 5)}…»; tiene que empezar por price_`; continue; }
+    try {
+      const p = await stripe(env, "GET", "prices/" + encodeURIComponent(id));
+      out[nombre] = `${(p.unit_amount / 100).toFixed(2)} ${String(p.currency).toUpperCase()} · ${p.recurring ? "recurrente cada " + p.recurring.interval : "ERROR: es de pago único, tiene que ser recurrente"} · ${p.active ? "activo" : "ERROR: inactivo"} · ${p.livemode ? "modo real" : "modo prueba"}`;
+    } catch (e) { out[nombre] = "Stripe dice: " + e.message; }
+  }
+  return json(out);
 }
