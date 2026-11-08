@@ -28,24 +28,29 @@ const bandera = (cc) => (/^[A-Z]{2}$/.test(cc || "") ? String.fromCodePoint(...[
 const n = (x) => x.toLocaleString("es-ES");
 
 async function telegram(env, text) {
-  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) return false;
+  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) return "faltan las claves de Telegram";
   const r = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text, disable_web_page_preview: true })
   });
-  return r.ok;
+  if (r.ok) return "ok";
+  try { return "Telegram: " + (await r.json()).description; } catch { return "Telegram: error " + r.status; }
+}
+
+async function apuntar(env, datos) {
+  try { if (env.VISITAS) await env.VISITAS.put("ultimo-aviso", JSON.stringify({ hora: new Date().toLocaleString("es-ES", { timeZone: TZ }), ...datos })); } catch {}
 }
 
 export async function onRequestPost({ request, env }) {
   const ok = () => new Response(null, { status: 204 });
   const ua = request.headers.get("user-agent") || "";
-  if (!ua || BOTS.test(ua)) return ok();
+  if (!ua || BOTS.test(ua)) { await apuntar(env, { resultado: "descartada: parece un bot", navegador: ua.slice(0, 160) }); return ok(); }
   let body = {};
   try { body = JSON.parse(await request.text()); } catch { return ok(); }
   const host = new URL(request.url).hostname;
   const pagina = String(body.p || "/").slice(0, 120);
   const desde = origen(String(body.r || "").slice(0, 300), host);
-  if (desde === null) return ok();
+  if (desde === null) { await apuntar(env, { resultado: "descartada: navegación interna" }); return ok(); }
 
   const hoy = dayKey();
   let c = { dia: hoy, hoy: 0, total: 0 }, resumenAyer = null;
@@ -69,7 +74,8 @@ export async function onRequestPost({ request, env }) {
   }
   // Se espera a Telegram antes de responder: el aviso sale desde el navegador con sendBeacon,
   // así que la espera no afecta a quien visita la web.
-  await Promise.allSettled(tareas);
+  const res = await Promise.allSettled(tareas);
+  await apuntar(env, { resultado: avisar ? res.map((x) => (x.status === "fulfilled" ? x.value : "error: " + x.reason)).join(" | ") : "sin aviso (mucho tráfico)", pagina, navegador: ua.slice(0, 160) });
   return ok();
 }
 
@@ -90,7 +96,7 @@ export async function onRequestGet({ env }) {
       } catch (e) { prueba = "error al conectar con Telegram"; }
     }
   }
-  let visitas = null;
-  try { visitas = env.VISITAS ? await env.VISITAS.get("contador", "json") : null; } catch {}
-  return new Response(JSON.stringify({ ...estado, prueba, visitas }, null, 2), { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
+  let visitas = null, ultimoAviso = null;
+  try { visitas = env.VISITAS ? await env.VISITAS.get("contador", "json") : null; ultimoAviso = env.VISITAS ? await env.VISITAS.get("ultimo-aviso", "json") : null; } catch {}
+  return new Response(JSON.stringify({ ...estado, prueba, visitas, ultimoAviso }, null, 2), { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 }
