@@ -36,7 +36,7 @@ async function telegram(env, text) {
   return r.ok;
 }
 
-export async function onRequestPost({ request, env, waitUntil }) {
+export async function onRequestPost({ request, env }) {
   const ok = () => new Response(null, { status: 204 });
   const ua = request.headers.get("user-agent") || "";
   if (!ua || BOTS.test(ua)) return ok();
@@ -67,8 +67,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
     const extra = c.hoy > AVISO_CADA_UNA_HASTA ? `\n(Hoy hay mucho tráfico: aviso cada 10 visitas)` : "";
     tareas.push(telegram(env, `${cabecera}\n📄 ${pagina}\n🔎 Llega desde: ${desde}\n${movil} · ${bandera(request.cf?.country)}${extra}`));
   }
-  const p = Promise.allSettled(tareas);
-  if (waitUntil) waitUntil(p); else await p;
+  // Se espera a Telegram antes de responder: el aviso sale desde el navegador con sendBeacon,
+  // así que la espera no afecta a quien visita la web.
+  await Promise.allSettled(tareas);
   return ok();
 }
 
