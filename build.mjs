@@ -35,7 +35,16 @@ if (errors.length) { console.error("Errores en el banco de preguntas:\n" + error
 if (!process.env.OWNER_NAME) console.warn("⚠️ Faltan tus datos legales (OWNER_NAME, OWNER_NIF, OWNER_ADDRESS, OWNER_EMAIL): el aviso legal saldrá con huecos.");
 
 // ===== 2. Preparar datos =====
-const all = QUESTIONS.map((q, i) => [...q, "q" + i]);
+// Reparte la respuesta correcta entre A, B, C y D: rota las opciones de forma estable (según el enunciado),
+// manteniendo su orden cíclico. No se rota si alguna opción hace referencia a las demás.
+const hash = (t) => { let h = 2166136261; for (const c of t) h = Math.imul(h ^ c.codePointAt(0), 16777619) >>> 0; return h; };
+function balance(q) {
+  const [b, text, opts, a, ...rest] = q;
+  if (opts.some((o) => /anterior|ambas|todas las|ninguna de las/i.test(o))) return q;
+  const k = (a - (hash(text) % 4) + 4) % 4;
+  return [b, text, opts.map((_, j) => opts[(j + k) % 4]), (a - k + 4) % 4, ...rest];
+}
+const all = QUESTIONS.map((q, i) => [...balance(q), "q" + i]);
 const perBlockIndex = {};
 const free = all.filter((q) => { const n = (perBlockIndex[q[0]] = (perBlockIndex[q[0]] || 0) + 1) - 1; return n % SITE.freeRatio === 0; });
 const blocks = {};
@@ -130,12 +139,12 @@ function appPage(demo) {
   const BUILD = { demo, blocks, total, freePerDay: SITE.freePerDay, prices: SITE.prices, free: demo ? all : free };
   const seo = `<section class="wrap seo" aria-labelledby="seo-title">
     <h2 id="seo-title">Tests de oposiciones por ley</h2>
-    <p>Practica gratis con preguntas tipo test de las normas que entran en Auxiliar Administrativo del Estado, Administrativo, Correos, Justicia y la mayoría de oposiciones de la Administración: Constitución Española, Ley 39/2015, Ley 40/2015 y TREBEP. Cada pregunta incluye la solución explicada y el artículo exacto.</p>
-    ${demo ? "" : `<ul>${Object.values(blocks).map((b) => `<li><a href="/tests/${b.slug}/">Test de ${esc(b.name)}</a></li>`).join("")}</ul>
+    <p>Practica gratis con preguntas tipo test de todo el temario de Auxiliar Administrativo del Estado y de la mayoría de oposiciones de la Administración: Constitución Española, Leyes 39/2015 y 40/2015, TREBEP, transparencia, protección de datos, igualdad, administración electrónica, registro y archivo, y ofimática (Windows 11, Word, Excel, Access y Outlook). Cada pregunta incluye la solución explicada y su referencia.</p>
+    ${demo ? "" : `<ul>${Object.values(blocks).map((b) => `<li><a href="/tests/${b.slug}/">Test ${deLa(b)} ${esc(b.name)}</a></li>`).join("")}</ul>
     <h2>Tests por tema de Auxiliar Administrativo del Estado</h2><p><a href="/temario/">Temario completo (28 temas) y cómo es el examen</a></p>${temaLinks()}
     <h2>Herramientas para opositores</h2><ul>${TOOLS.map((t) => `<li><a href="/herramientas/${t.slug}/">${esc(t.name)}</a></li>`).join("")}</ul>`}
   </section>`;
-  return `${head({ title: `${SITE.name}: tests de oposiciones con solución explicada`, description: `Tests de oposiciones gratis con ${total} preguntas explicadas: Constitución, Ley 39/2015, Ley 40/2015, TREBEP y psicotécnicos. Simulacros con penalización real.`, path: "/", full: !demo })}
+  return `${head({ title: `${SITE.name}: tests de oposiciones con solución explicada`, description: `Tests de oposiciones gratis con ${total} preguntas explicadas: Constitución, Leyes 39 y 40/2015, TREBEP, Word, Excel, Access, Windows 11 y psicotécnicos. Temario de Auxiliar Administrativo del Estado por temas.`, path: "/", full: !demo })}
 ${header(true)}
 <main class="wrap" id="view"></main>
 ${seo}
@@ -148,12 +157,13 @@ ${appJs}
 </script>${demo ? "" : "</body></html>"}`;
 }
 
+const deLa = (b) => b.de || (/^(Ley|Constitución|Protección|Administración General)/.test(b.name) ? "de la" : /^Presupuesto/.test(b.name) ? "del" : "de");
 function testPage(key, b) {
   const qs = free.filter((q) => q[0] === key);
   const L = ["A", "B", "C", "D"];
   const isPsi = b.generated;
-  const title = isPsi ? `Test de psicotécnicos para oposiciones: series y cálculo` : `Test de la ${b.name} para oposiciones (${b.total} preguntas con solución)`;
-  const desc = isPsi ? "Psicotécnicos ilimitados para oposiciones: series numéricas, porcentajes y reglas de tres con la solución explicada." : `Preguntas tipo test de la ${b.name} (${b.meta}) con la respuesta correcta y el artículo que la justifica. Gratis para preparar tu oposición.`;
+  const title = isPsi ? `Test de psicotécnicos para oposiciones: series y cálculo` : `Test ${deLa(b)} ${b.name} para oposiciones (${b.total} preguntas con solución)`;
+  const desc = isPsi ? "Psicotécnicos ilimitados para oposiciones: series numéricas, porcentajes y reglas de tres con la solución explicada." : `Preguntas tipo test ${deLa(b)} ${b.name} (${b.meta}) con la respuesta correcta explicada. Gratis para preparar Auxiliar Administrativo del Estado y otras oposiciones.`;
   const body = isPsi ? `<p>Los psicotécnicos de PlazaFija se generan automáticamente: cada test es distinto. Practica series numéricas (aritméticas, geométricas, alternas y de diferencias crecientes), porcentajes, descuentos y reglas de tres directas e inversas, con la solución explicada paso a paso.</p>` :
     qs.map((q, i) => `<article class="qa"><b>${i + 1}. ${esc(q[1])}</b><ol type="A">${q[2].map((o) => `<li>${esc(o)}</li>`).join("")}</ol>
       <details><summary>Ver solución</summary><p><b>${L[q[3]]}) ${esc(q[2][q[3]])}</b>. ${esc(q[5])} <span class="free-tag">${esc(q[4])}</span></p></details></article>`).join("\n");
@@ -161,7 +171,7 @@ function testPage(key, b) {
 ${header(false)}
 <main class="wrap doc">
   <span class="eyebrow">${esc(b.meta)}</span>
-  <h1>${isPsi ? "Test de psicotécnicos para oposiciones" : `Test de la ${esc(b.name)}`}</h1>
+  <h1>${isPsi ? "Test de psicotécnicos para oposiciones" : `Test ${deLa(b)} ${esc(b.name)}`}</h1>
   <p class="lede">${isPsi ? "Series, porcentajes y proporciones con la solución explicada." : `${qs.length} preguntas de muestra con su solución. En la app tienes ${b.total} preguntas de este bloque, estadísticas y repaso de fallos.`}</p>
   <a class="btn primary cta" href="/">Hacer el test interactivo gratis</a>
   ${body}
@@ -235,4 +245,4 @@ out("dist/_headers", `/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: 
 out("functions/_lib/premium-data.js", `// Generado por build.mjs. No editar: edita src/questions.js y vuelve a ejecutar el build.\nexport const PREMIUM = ${JSON.stringify(all)};\n`);
 out("demo/index.html", appPage(true));
 
-console.log(`OK · ${total} preguntas (${free.length} gratuitas) en ${lawBlocks.length} leyes + psicotécnicos · ${urls.length} páginas · web: ${SITE.url}`);
+console.log(`OK · ${total} preguntas (${free.length} gratuitas) en ${lawBlocks.length} bloques + psicotécnicos · ${urls.length} páginas · web: ${SITE.url}`);

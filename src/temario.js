@@ -68,6 +68,19 @@ export function temaOf(q) {
     case "LPD": return T("I", 12);
     case "TREBEP": return a != null && ((a >= 14 && a <= 54) || (a >= 93 && a <= 98)) ? T("I", 14) : T("I", 13);
     case "IGU": return T("I", 16);
+    case "AGE": return T("I", 8);
+    case "PRE": return T("I", 15);
+    case "ATE": return T("II", 1);
+    case "INFO": return T("II", 2);
+    case "REG": return T("II", 3);
+    case "AE": return T("II", 4);
+    case "INF": return T("II", 5);
+    case "WIN": return /Explorador|herramientas del sistema/.test(ref) ? T("II", 7) : T("II", 6);
+    case "WORD": return T("II", 8);
+    case "EXCEL": return T("II", 9);
+    case "ACC": return T("II", 10);
+    case "OUT": return T("II", 11);
+    case "NET": return T("II", 12);
     default: return null;
   }
 }

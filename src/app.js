@@ -40,9 +40,9 @@ function home() {
   const pro = premium();
   view.innerHTML = `
   <section>
-    <span class="eyebrow">Auxiliar Administrativo y leyes comunes a decenas de oposiciones</span>
+    <span class="eyebrow">Auxiliar Administrativo del Estado y leyes comunes a decenas de oposiciones</span>
     <h1>Practica el temario con preguntas explicadas artículo por artículo</h1>
-    <p class="lede">${BUILD.total} preguntas de la Constitución, la Ley 39/2015, la Ley 40/2015, el TREBEP y más, y psicotécnicos ilimitados. Cada respuesta te dice en qué artículo está.</p>
+    <p class="lede">${BUILD.total} preguntas de los 28 temas de Auxiliar Administrativo del Estado: Constitución, Leyes 39 y 40/2015, TREBEP, administración electrónica, Word, Excel, Access y más, y psicotécnicos ilimitados. Cada respuesta viene explicada.</p>
   </section>
   <div class="quota">
     ${pro ? `<div class="quota-row"><b>Premium activo</b><span>Todo el banco de preguntas, sin límites</span></div>` :

@@ -1,3 +1,6 @@
+import { BLOCKS_LEGAL, QUESTIONS_LEGAL } from "./ampliacion-legal.js";
+import { BLOCKS_OFI, QUESTIONS_OFI } from "./ampliacion-ofimatica.js";
+
 // Banco de preguntas de PlazaFija.
 // Formato: [bloque, enunciado, [opción A, B, C, D], índice correcto (0-3), referencia, explicación]
 // Revisa siempre contra el texto consolidado del BOE antes de publicar cambios.
@@ -266,3 +269,11 @@ export const QUESTIONS = [
 ["LPD","¿Cuál de estos NO es un derecho del interesado reconocido en el RGPD?",["Derecho de acceso","Derecho a la portabilidad de los datos","Derecho de supresión","Derecho de censura previa"],3,"RGPD, arts. 15 a 22","Los derechos son acceso, rectificación, supresión, limitación del tratamiento, portabilidad y oposición, además de no ser objeto de decisiones individuales automatizadas."],
 ["LPD","Las autoridades y organismos públicos que traten datos personales están obligados a designar:",["Un abogado del Estado","Un delegado de protección de datos","Un auditor externo","Un notario"],1,"Art. 37.1.a RGPD","El responsable y el encargado designarán un delegado de protección de datos siempre que el tratamiento lo lleve a cabo una autoridad u organismo público, excepto los tribunales en ejercicio de su función judicial."]
 ];
+
+// Ampliación: los bloques nuevos van antes de Psicotécnicos y las preguntas se añaden al final
+// (así no cambian los identificadores ni las preguntas gratuitas ya existentes).
+{
+  const psi = BLOCKS.PSI; delete BLOCKS.PSI;
+  Object.assign(BLOCKS, BLOCKS_LEGAL, BLOCKS_OFI, { PSI: psi });
+  QUESTIONS.push(...QUESTIONS_LEGAL, ...QUESTIONS_OFI);
+}
