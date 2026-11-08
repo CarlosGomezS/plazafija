@@ -3,6 +3,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { BLOCKS, QUESTIONS } from "./src/questions.js";
 import { TOOLS } from "./src/tools.js";
+import { TEMAS, CONVOCATORIA, temaOf } from "./src/temario.js";
 
 // ===== CONFIGURACIÓN: cambia estos datos antes de publicar =====
 const SITE = {
@@ -78,12 +79,60 @@ const footer = (withLinks) => `<footer><div class="wrap">
 
 const lawBlocks = Object.entries(blocks).filter(([, b]) => !b.generated);
 
+// ===== Temas del temario oficial =====
+const MIN_TEMA = 6; // un tema solo tiene página propia si reúne al menos estas preguntas
+const temas = TEMAS.map((t) => {
+  const qs = all.filter((q) => temaOf(q) === t);
+  return { ...t, label: `${t.b === "I" ? "Tema" : "Bloque II · Tema"} ${t.n}`, total: qs.length, free: free.filter((q) => temaOf(q) === t), page: qs.length >= MIN_TEMA };
+});
+const temasConPagina = temas.filter((t) => t.page);
+const temaLinks = (except) => `<ul>${temasConPagina.filter((t) => t.slug !== except).map((t) => `<li><a href="/temario/${t.slug}/">${esc(t.label)}: ${esc(t.t)}</a></li>`).join("")}</ul>`;
+const L4 = ["A", "B", "C", "D"];
+const qaHtml = (qs) => qs.map((q, i) => `<article class="qa"><b>${i + 1}. ${esc(q[1])}</b><ol type="A">${q[2].map((o) => `<li>${esc(o)}</li>`).join("")}</ol>
+      <details><summary>Ver solución</summary><p><b>${L4[q[3]]}) ${esc(q[2][q[3]])}</b>. ${esc(q[5])} <span class="free-tag">${esc(q[4])}</span></p></details></article>`).join("\n");
+
+function temaPage(t) {
+  const title = `Test ${t.label} Auxiliar Administrativo del Estado: ${t.t}`;
+  const desc = `Preguntas tipo test del ${t.label.toLowerCase()} de Auxiliar Administrativo del Estado (${t.t}) con la solución y el artículo que la justifica. Gratis y actualizado a la convocatoria del ${CONVOCATORIA.fecha}.`;
+  return `${head({ title, description: desc, path: `/temario/${t.slug}/` })}
+${header(false)}
+<main class="wrap doc">
+  <span class="eyebrow">Auxiliar Administrativo del Estado · ${esc(t.label)}</span>
+  <h1>Test del ${esc(t.label.toLowerCase())}: ${esc(t.t)}</h1>
+  <p class="lede">${esc(t.d)} ${t.free.length} preguntas de muestra con su solución; en la app tienes ${t.total} preguntas de este tema y ${total} en total.</p>
+  <a class="btn primary cta" href="/">Hacer el test interactivo gratis</a>
+  ${qaHtml(t.free)}
+  <a class="btn primary cta" href="/">Practicar con ${total} preguntas</a>
+  <section class="seo"><h2>Más temas de Auxiliar Administrativo del Estado</h2>${temaLinks(t.slug)}
+  <p><a href="/temario/">Ver el temario completo y cómo es el examen</a></p></section>
+</main>
+${footer(true)}</body></html>`;
+}
+
+function temarioPage() {
+  const row = (t) => `<li>${t.page ? `<a href="/temario/${t.slug}/"><b>${esc(t.label)}.</b> ${esc(t.t)}</a> · ${t.total} preguntas` : `<b>${esc(t.label)}.</b> ${esc(t.t)} · <i>preguntas en preparación</i>`}<br><small>${esc(t.d)}</small></li>`;
+  return `${head({ title: "Temario Auxiliar Administrativo del Estado 2026: los 28 temas con test", description: `Los 28 temas del temario oficial de Auxiliar Administrativo del Estado (convocatoria BOE ${CONVOCATORIA.fecha}) con tests gratis por tema y cómo es el examen.`, path: "/temario/" })}
+${header(false)}
+<main class="wrap doc">
+  <span class="eyebrow">Auxiliar Administrativo del Estado</span>
+  <h1>Temario de Auxiliar Administrativo del Estado con tests por tema</h1>
+  <p class="lede">Los 28 temas del programa oficial de la última convocatoria (${CONVOCATORIA.boe}, BOE de ${CONVOCATORIA.fecha}), con preguntas tipo test de cada tema.</p>
+  <h2>Cómo es el examen</h2><p>${esc(CONVOCATORIA.examen)}</p>
+  <a class="btn primary cta" href="/">Hacer un test gratis</a>
+  <h2>Bloque I · Organización pública (16 temas)</h2><ol style="list-style:none;padding:0;display:grid;gap:10px">${temas.filter((t) => t.b === "I").map(row).join("")}</ol>
+  <h2>Bloque II · Actividad administrativa y ofimática (12 temas)</h2><ol style="list-style:none;padding:0;display:grid;gap:10px">${temas.filter((t) => t.b === "II").map(row).join("")}</ol>
+  <p><small>Títulos resumidos. El enunciado oficial completo está en el anexo I de la convocatoria publicada en el BOE.</small></p>
+</main>
+${footer(true)}</body></html>`;
+}
+
 function appPage(demo) {
   const BUILD = { demo, blocks, total, freePerDay: SITE.freePerDay, prices: SITE.prices, free: demo ? all : free };
   const seo = `<section class="wrap seo" aria-labelledby="seo-title">
     <h2 id="seo-title">Tests de oposiciones por ley</h2>
     <p>Practica gratis con preguntas tipo test de las normas que entran en Auxiliar Administrativo del Estado, Administrativo, Correos, Justicia y la mayoría de oposiciones de la Administración: Constitución Española, Ley 39/2015, Ley 40/2015 y TREBEP. Cada pregunta incluye la solución explicada y el artículo exacto.</p>
     ${demo ? "" : `<ul>${Object.values(blocks).map((b) => `<li><a href="/tests/${b.slug}/">Test de ${esc(b.name)}</a></li>`).join("")}</ul>
+    <h2>Tests por tema de Auxiliar Administrativo del Estado</h2><p><a href="/temario/">Temario completo (28 temas) y cómo es el examen</a></p>${temaLinks()}
     <h2>Herramientas para opositores</h2><ul>${TOOLS.map((t) => `<li><a href="/herramientas/${t.slug}/">${esc(t.name)}</a></li>`).join("")}</ul>`}
   </section>`;
   return `${head({ title: `${SITE.name}: tests de oposiciones con solución explicada`, description: `Tests de oposiciones gratis con ${total} preguntas explicadas: Constitución, Ley 39/2015, Ley 40/2015, TREBEP y psicotécnicos. Simulacros con penalización real.`, path: "/", full: !demo })}
@@ -118,6 +167,7 @@ ${header(false)}
   ${body}
   <a class="btn primary cta" href="/">Practicar con ${total} preguntas</a>
   <section class="seo"><h2>Otros tests</h2><ul>${Object.values(blocks).filter((x) => x.slug !== b.slug).map((x) => `<li><a href="/tests/${x.slug}/">${esc(x.name)}</a></li>`).join("")}</ul>
+  <h2>Tests por tema (Auxiliar Administrativo del Estado)</h2><p><a href="/temario/">Temario completo</a></p>
   <h2>Herramientas</h2><ul>${TOOLS.map((t) => `<li><a href="/herramientas/${t.slug}/">${esc(t.name)}</a></li>`).join("")}</ul></section>
 </main>
 ${footer(true)}</body></html>`;
@@ -174,8 +224,10 @@ const out = (p, c) => { mkdirSync(p.split("/").slice(0, -1).join("/"), { recursi
 out("dist/index.html", appPage(false));
 for (const [k, b] of Object.entries(blocks)) out(`dist/tests/${b.slug}/index.html`, testPage(k, b));
 for (const t of TOOLS) out(`dist/herramientas/${t.slug}/index.html`, toolPage(t));
+out("dist/temario/index.html", temarioPage());
+for (const t of temasConPagina) out(`dist/temario/${t.slug}/index.html`, temaPage(t));
 for (const [slug, data] of Object.entries(legal)) out(`dist/legal/${slug}/index.html`, legalPage(slug, data));
-const urls = ["/", ...Object.values(blocks).map((b) => `/tests/${b.slug}/`), ...TOOLS.map((t) => `/herramientas/${t.slug}/`), ...Object.keys(legal).map((s) => `/legal/${s}/`)];
+const urls = ["/", ...Object.values(blocks).map((b) => `/tests/${b.slug}/`), ...TOOLS.map((t) => `/herramientas/${t.slug}/`), "/temario/", ...temasConPagina.map((t) => `/temario/${t.slug}/`), ...Object.keys(legal).map((s) => `/legal/${s}/`)];
 const today = new Date().toISOString().slice(0, 10);
 out("dist/sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${SITE.url}${u}</loc><lastmod>${today}</lastmod></url>`).join("\n")}\n</urlset>\n`);
 out("dist/robots.txt", `User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: ${SITE.url}/sitemap.xml\n`);
