@@ -190,3 +190,15 @@ test("claim avisa por Telegram de la suscripción nueva una sola vez", async () 
   assert.match(text, /PRUEBA/);
   assert.match(text, /Suscripciones registradas: 1/);
 });
+
+test("interés en Premium con pagos en pausa: cuenta y avisa", async () => {
+  const { onRequestPost } = await import("./functions/api/interes.js");
+  const calls = mockStripe([[/api\.telegram\.org/, () => ({ ok: true })]]);
+  const env = { ...TG, VISITAS: kv() };
+  const r = (plan) => new Request("https://x.test/api/interes", { method: "POST", body: JSON.stringify({ plan }), headers: { "user-agent": "Mozilla/5.0 Mobile" } });
+  await onRequestPost({ request: r("year"), env });
+  await onRequestPost({ request: r("month"), env });
+  const t = calls.map((c) => JSON.parse(c.opts.body).text);
+  assert.match(t[0], /anual \(29 €\)[\s\S]*Interesados en Premium: 1/);
+  assert.match(t[1], /mensual \(4,99 €\)[\s\S]*Interesados en Premium: 2/);
+});

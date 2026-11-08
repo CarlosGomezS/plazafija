@@ -14,6 +14,9 @@ const SITE = {
   // Código de verificación de Google Search Console (etiqueta HTML: solo el valor de content="...")
   // Clave pública de IndexNow (avisa a Bing, Yandex y otros buscadores de las páginas nuevas en cada publicación)
   indexNowKey: "97ad9d03b5a941ebaad1bc1ff95c3b04",
+  // false = pagos en pausa: el botón «Suscribirme» no cobra; registra el interés y te avisa por Telegram.
+  // Ponlo a true cuando las claves reales de Stripe estén guardadas en GitHub.
+  pagosActivos: false,
   googleVerification: "YEgrrXAVfYxEi9-HV_-qDhrscKqbmkbSR4CYfcGpYac",
   prices: { month: "4,99 €", year: "29 €", yearMonthly: "2,42 €" },
   // Tus datos legales (LSSI) NO van en el repositorio: se leen de las variables de Cloudflare Pages (OWNER_NAME, OWNER_NIF, OWNER_ADDRESS, OWNER_EMAIL)
@@ -138,7 +141,7 @@ ${footer(true)}</body></html>`;
 }
 
 function appPage(demo) {
-  const BUILD = { demo, blocks, total, freePerDay: SITE.freePerDay, prices: SITE.prices, free: demo ? all : free };
+  const BUILD = { demo, pagos: SITE.pagosActivos, blocks, total, freePerDay: SITE.freePerDay, prices: SITE.prices, free: demo ? all : free };
   const seo = `<section class="wrap seo" aria-labelledby="seo-title">
     <h2 id="seo-title">Tests de oposiciones por ley</h2>
     <p>Practica gratis con preguntas tipo test de todo el temario de Auxiliar Administrativo del Estado y de la mayoría de oposiciones de la Administración: Constitución Española, Leyes 39/2015 y 40/2015, TREBEP, transparencia, protección de datos, igualdad, administración electrónica, registro y archivo, y ofimática (Windows 11, Word, Excel, Access y Outlook). Cada pregunta incluye la solución explicada y su referencia.</p>

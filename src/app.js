@@ -201,6 +201,12 @@ function openPay(reason) {
   $("#pw-sim").onclick = () => { S.demoPremium = true; save(); overlay.hidden = true; toast("Premium activado (demo)"); home(); };
   $("#pw-buy").onclick = async () => {
     if (BUILD.demo) { $("#pw-demo").hidden = false; return; }
+    if (!BUILD.pagos) {
+      try { if (!sessionStorage.getItem("pfi")) { sessionStorage.setItem("pfi", "1"); navigator.sendBeacon("/api/interes", JSON.stringify({ plan })); } } catch (e) {}
+      $("#pw-buy").disabled = true;
+      $("#pw-err").textContent = "¡Gracias por tu interés! PlazaFija Premium abre muy pronto. Mientras tanto, sigue practicando gratis cada día.";
+      return;
+    }
     const btn = $("#pw-buy"); btn.disabled = true; $("#pw-err").textContent = "";
     try { const r = await api("checkout", { plan }); location.href = r.url; }
     catch (e) { btn.disabled = false; $("#pw-err").textContent = e.demo ? "Los pagos todavía no están activados en esta web." : e.message; }
