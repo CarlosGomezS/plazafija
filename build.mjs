@@ -75,7 +75,7 @@ const header = (isApp) => `<header class="top"><div class="wrap">
 const footer = (withLinks) => `<footer><div class="wrap">
   Preguntas basadas en la legislación vigente con referencia al artículo. Comprueba siempre el texto consolidado en el BOE.
   ${withLinks ? `<nav><a href="/legal/aviso-legal/">Aviso legal</a><a href="/legal/privacidad/">Privacidad</a><a href="/legal/condiciones/">Condiciones de contratación</a><span>Contacto: ${esc(SITE.owner.email)}</span></nav>` : "<nav><span>Versión de demostración</span></nav>"}
-</div></footer>`;
+</div></footer>${withLinks ? `<script>try{if(!sessionStorage.getItem("pfv")){sessionStorage.setItem("pfv","1");navigator.sendBeacon("/api/visita",JSON.stringify({p:location.pathname,r:document.referrer}))}}catch(e){}</script>` : ""}`;
 
 const lawBlocks = Object.entries(blocks).filter(([, b]) => !b.generated);
 
@@ -204,7 +204,7 @@ const legal = {
     <h2>Qué datos tratamos</h2><p>Para usar los tests no necesitas registrarte. Tu progreso (aciertos, fallos y preguntas usadas) se guarda solo en tu navegador. Si te suscribes, el pago lo gestiona Stripe Payments Europe, Ltd., que trata tu nombre, email y datos de pago. Nosotros solo recibimos tu email y el estado de tu suscripción.</p>
     <h2>Finalidad y base legal</h2><p>Gestionar tu suscripción y darte acceso al contenido Premium (ejecución del contrato) y cumplir obligaciones fiscales (obligación legal).</p>
     <h2>Conservación</h2><p>Mientras la suscripción esté activa y, después, durante los plazos exigidos por la normativa fiscal.</p>
-    <h2>Cookies y estadísticas</h2><p>Solo usamos almacenamiento local técnico, necesario para que la app funcione. Para saber cuántas visitas recibe la web usamos Cloudflare Web Analytics, que no instala cookies, no guarda tu dirección IP ni te sigue entre sitios web: solo cuenta visitas de forma agregada. No usamos cookies publicitarias.</p>
+    <h2>Cookies y estadísticas</h2><p>Solo usamos almacenamiento local técnico, necesario para que la app funcione. Para saber cuántas visitas recibe la web usamos Cloudflare Web Analytics, que no instala cookies, no guarda tu dirección IP ni te sigue entre sitios web: solo cuenta visitas de forma agregada. Además, al entrar se registra de forma anónima la página visitada, la web de procedencia, el país y si usas móvil u ordenador, para llevar un recuento de visitas; no se guarda tu dirección IP ni ningún dato que te identifique. No usamos cookies publicitarias.</p>
     <h2>Tus derechos</h2><p>Puedes ejercer los derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo a ${O.email}. También puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p>`],
   "condiciones": ["Condiciones de contratación", `
     <h2>Servicio</h2><p>PlazaFija Premium da acceso a todo el banco de preguntas, simulacros y repaso de fallos mientras la suscripción esté activa.</p>

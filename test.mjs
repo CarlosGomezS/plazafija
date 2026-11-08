@@ -7,6 +7,7 @@ import * as checkout from "./functions/api/checkout.js";
 import * as claim from "./functions/api/claim.js";
 import * as questions from "./functions/api/questions.js";
 import * as restore from "./functions/api/restore.js";
+import * as visita from "./functions/api/visita.js";
 
 const ENV = { STRIPE_SECRET_KEY: "sk_test_x", STRIPE_PRICE_MONTH: "price_m", STRIPE_PRICE_YEAR: "price_y", TOKEN_SECRET: "secreto-de-prueba-muy-largo" };
 const req = (path, body) => new Request("https://plazafija.test/api/" + path, { method: "POST", body: JSON.stringify(body) });
@@ -121,4 +122,55 @@ test("psicotécnicos: 500 preguntas generadas son válidas", () => {
     assert.equal(new Set(q.o).size, 4, q.q);
     assert.ok(q.a >= 0 && q.a < 4, q.q);
   }
+});
+
+// ---- Contador de visitas con aviso por Telegram ----
+const kv = () => { const m = new Map(); return { get: async (k, t) => (m.has(k) ? (t === "json" ? JSON.parse(m.get(k)) : m.get(k)) : null), put: async (k, v) => m.set(k, v), m }; };
+const visit = (body, ua = "Mozilla/5.0 (iPhone) Mobile Safari", country = "ES") => {
+  const r = new Request("https://plazafija-34s.pages.dev/api/visita", { method: "POST", body: JSON.stringify(body), headers: { "user-agent": ua } });
+  Object.defineProperty(r, "cf", { value: { country } });
+  return r;
+};
+const TG = { TELEGRAM_BOT_TOKEN: "123:abc", TELEGRAM_CHAT_ID: "42" };
+
+test("visita: cuenta, avisa por Telegram con página, origen, dispositivo y país", async () => {
+  const calls = mockStripe([[/api\.telegram\.org/, () => ({ ok: true })]]);
+  const env = { ...TG, VISITAS: kv() };
+  await visita.onRequestPost({ request: visit({ p: "/temario/", r: "https://www.google.es/" }), env });
+  await visita.onRequestPost({ request: visit({ p: "/", r: "" }, "Mozilla/5.0 (Windows NT 10.0)", "MX"), env });
+  assert.equal(calls.length, 2);
+  const m1 = JSON.parse(calls[0].opts.body), m2 = JSON.parse(calls[1].opts.body);
+  assert.equal(m1.chat_id, "42");
+  assert.match(m1.text, /Visita nº 1 de hoy · 1 en total/);
+  assert.match(m1.text, /\/temario\//); assert.match(m1.text, /Google/); assert.match(m1.text, /Móvil/); assert.match(m1.text, /ES/);
+  assert.match(m2.text, /nº 2 de hoy · 2 en total/); assert.match(m2.text, /Directo/); assert.match(m2.text, /Ordenador/); assert.match(m2.text, /MX/);
+});
+
+test("visita: ignora bots y navegación interna; sin almacén avisa sin número", async () => {
+  const calls = mockStripe([[/api\.telegram\.org/, () => ({ ok: true })]]);
+  await visita.onRequestPost({ request: visit({ p: "/" }, "Googlebot/2.1"), env: { ...TG } });
+  await visita.onRequestPost({ request: visit({ p: "/x", r: "https://plazafija-34s.pages.dev/" }), env: { ...TG } });
+  assert.equal(calls.length, 0);
+  await visita.onRequestPost({ request: visit({ p: "/", r: "https://t.co/abc" }), env: { ...TG } });
+  assert.equal(calls.length, 1);
+  assert.match(JSON.parse(calls[0].opts.body).text, /Nueva visita[\s\S]*X \(Twitter\)/);
+});
+
+test("visita: al cambiar de día manda el resumen de ayer y reinicia el contador diario", async () => {
+  const calls = mockStripe([[/api\.telegram\.org/, () => ({ ok: true })]]);
+  const store = kv();
+  await store.put("contador", JSON.stringify({ dia: "2000-01-01", hoy: 37, total: 500 }));
+  await visita.onRequestPost({ request: visit({ p: "/" }), env: { ...TG, VISITAS: store } });
+  const texts = calls.map((c) => JSON.parse(c.opts.body).text);
+  assert.ok(texts.some((t) => /Resumen del 2000-01-01: 37 visitas/.test(t)));
+  assert.ok(texts.some((t) => /nº 1 de hoy · 501 en total/.test(t)));
+});
+
+test("visita: con mucho tráfico avisa solo cada 10 visitas", async () => {
+  const calls = mockStripe([[/api\.telegram\.org/, () => ({ ok: true })]]);
+  const store = kv();
+  await store.put("contador", JSON.stringify({ dia: visita.dayKey(), hoy: 150, total: 1000 }));
+  for (let i = 0; i < 10; i++) await visita.onRequestPost({ request: visit({ p: "/" }), env: { ...TG, VISITAS: store } });
+  assert.equal(calls.length, 1);
+  assert.match(JSON.parse(calls[0].opts.body).text, /nº 160 de hoy/);
 });
