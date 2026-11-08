@@ -14,7 +14,8 @@ export async function onRequestPost({ request, env }) {
       cancel_url: origin + "/?pago=cancelado",
       allow_promotion_codes: "true",
       billing_address_collection: "auto",
-      locale: "es"
+      locale: "es",
+      managed_payments: { enabled: "false" } // Stripe normal: el vendedor es el titular (sin Managed Payments)
     });
     return json({ url: session.url });
   } catch (e) {
@@ -43,7 +44,8 @@ export async function onRequestGet({ env }) {
     try {
       const sess = await stripe(env, "POST", "checkout/sessions", {
         mode: "subscription", line_items: { 0: { price: env.STRIPE_PRICE_MONTH, quantity: 1 } },
-        success_url: "https://example.com/?ok", cancel_url: "https://example.com/?no", allow_promotion_codes: "true", billing_address_collection: "auto", locale: "es"
+        success_url: "https://example.com/?ok", cancel_url: "https://example.com/?no", allow_promotion_codes: "true", billing_address_collection: "auto", locale: "es",
+      managed_payments: { enabled: "false" } // Stripe normal: el vendedor es el titular (sin Managed Payments)
       });
       out.paginaDePago = sess.url ? "se crea bien" : "sin URL";
     } catch (e) { out.paginaDePago = "Stripe dice: " + e.message; }
