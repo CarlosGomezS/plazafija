@@ -7,7 +7,7 @@ import { TOOLS } from "./src/tools.js";
 // ===== CONFIGURACIÓN: cambia estos datos antes de publicar =====
 const SITE = {
   name: "PlazaFija",
-  url: (process.env.SITE_URL || "https://plazafija.pages.dev").replace(/\/$/, ""),
+  url: (process.env.SITE_URL || "https://plazafija-34s.pages.dev").replace(/\/$/, ""),
   freePerDay: 15,
   freeRatio: 3, // 1 de cada 3 preguntas es gratuita (y aparece en las páginas públicas para Google)
   prices: { month: "4,99 €", year: "29 €", yearMonthly: "2,42 €" },

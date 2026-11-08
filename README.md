@@ -54,7 +54,7 @@ Abre `build.mjs` y edita el bloque `SITE`:
    npx wrangler login
    npm run deploy
    ```
-   La primera vez te preguntará si crea el proyecto `plazafija`: responde que sí. Al terminar te dará la dirección, tipo `https://plazafija.pages.dev`.
+   La primera vez te preguntará si crea el proyecto `plazafija`: responde que sí. Al terminar te dará la dirección, tipo `https://plazafija-34s.pages.dev` (si el nombre está cogido, Cloudflare añade un sufijo).
 3. En el panel de Cloudflare: **Workers y Pages → plazafija → Configuración → Variables y secretos**, añade (como «Secreto»):
 
    | Nombre | Valor |
