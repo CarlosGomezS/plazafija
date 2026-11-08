@@ -11,7 +11,8 @@ const SITE = {
   freePerDay: 15,
   freeRatio: 3, // 1 de cada 3 preguntas es gratuita (y aparece en las páginas públicas para Google)
   prices: { month: "4,99 €", year: "29 €", yearMonthly: "2,42 €" },
-  owner: { name: "[TU NOMBRE Y APELLIDOS]", nif: "[TU NIF]", address: "[TU DIRECCIÓN]", email: "[TU EMAIL DE CONTACTO]" }
+  // Tus datos legales (LSSI) NO van en el repositorio: se leen de las variables de Cloudflare Pages (OWNER_NAME, OWNER_NIF, OWNER_ADDRESS, OWNER_EMAIL)
+  owner: { name: process.env.OWNER_NAME || "[TU NOMBRE Y APELLIDOS]", nif: process.env.OWNER_NIF || "[TU NIF]", address: process.env.OWNER_ADDRESS || "[TU DIRECCIÓN]", email: process.env.OWNER_EMAIL || "[TU EMAIL DE CONTACTO]" }
 };
 
 // ===== 1. Validación del banco (falla el build si hay errores) =====
@@ -28,6 +29,7 @@ QUESTIONS.forEach((q, i) => {
   seen.add(text);
 });
 if (errors.length) { console.error("Errores en el banco de preguntas:\n" + errors.join("\n")); process.exit(1); }
+if (!process.env.OWNER_NAME) console.warn("⚠️ Faltan tus datos legales (OWNER_NAME, OWNER_NIF, OWNER_ADDRESS, OWNER_EMAIL): el aviso legal saldrá con huecos.");
 
 // ===== 2. Preparar datos =====
 const all = QUESTIONS.map((q, i) => [...q, "q" + i]);
