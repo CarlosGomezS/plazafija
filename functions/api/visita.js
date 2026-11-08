@@ -71,3 +71,25 @@ export async function onRequestPost({ request, env, waitUntil }) {
   if (waitUntil) waitUntil(p); else await p;
   return ok();
 }
+
+// Diagnóstico: abre /api/visita en el navegador. Dice qué está configurado y manda un mensaje de prueba
+// (como máximo uno por minuto). No muestra ninguna clave.
+export async function onRequestGet({ env }) {
+  const estado = { claveDelBot: Boolean(env.TELEGRAM_BOT_TOKEN), idDelChat: Boolean(env.TELEGRAM_CHAT_ID), contador: Boolean(env.VISITAS) };
+  let prueba = "no enviada";
+  if (estado.claveDelBot && estado.idDelChat) {
+    let reciente = false;
+    try { if (env.VISITAS) { reciente = Boolean(await env.VISITAS.get("ultima-prueba")); await env.VISITAS.put("ultima-prueba", "1", { expirationTtl: 60 }); } } catch {}
+    if (reciente) prueba = "espera un minuto para otra prueba";
+    else {
+      try {
+        const r = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text: "✅ Prueba de PlazaFija: los avisos de visitas funcionan." }) });
+        const d = await r.json();
+        prueba = d.ok ? "enviada: mira Telegram" : `Telegram respondió: ${d.description}`;
+      } catch (e) { prueba = "error al conectar con Telegram"; }
+    }
+  }
+  let visitas = null;
+  try { visitas = env.VISITAS ? await env.VISITAS.get("contador", "json") : null; } catch {}
+  return new Response(JSON.stringify({ ...estado, prueba, visitas }, null, 2), { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
+}
