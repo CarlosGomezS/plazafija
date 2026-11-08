@@ -10,6 +10,8 @@ const SITE = {
   url: (process.env.SITE_URL || "https://plazafija-34s.pages.dev").replace(/\/$/, ""),
   freePerDay: 15,
   freeRatio: 3, // 1 de cada 3 preguntas es gratuita (y aparece en las páginas públicas para Google)
+  // Código de verificación de Google Search Console (etiqueta HTML: solo el valor de content="...")
+  googleVerification: "",
   prices: { month: "4,99 €", year: "29 €", yearMonthly: "2,42 €" },
   // Tus datos legales (LSSI) NO van en el repositorio: se leen de las variables de Cloudflare Pages (OWNER_NAME, OWNER_NIF, OWNER_ADDRESS, OWNER_EMAIL)
   owner: { name: process.env.OWNER_NAME || "[TU NOMBRE Y APELLIDOS]", nif: process.env.OWNER_NIF || "[TU NIF]", address: process.env.OWNER_ADDRESS || "[TU DIRECCIÓN]", email: process.env.OWNER_EMAIL || "[TU EMAIL DE CONTACTO]" }
@@ -56,7 +58,7 @@ function head({ title, description, path, full = true }) {
 <meta name="description" content="${esc(description)}">
 ${full ? `<link rel="canonical" href="${canonical}">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:type" content="website"><meta property="og:url" content="${canonical}"><meta property="og:locale" content="es_ES">
-<meta name="theme-color" content="#1f4e8c">
+<meta name="theme-color" content="#1f4e8c">${SITE.googleVerification ? `<meta name="google-site-verification" content="${esc(SITE.googleVerification)}">` : ""}
 <link rel="icon" href="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#1f4e8c"/><text x="16" y="23" font-family="Georgia" font-size="19" font-weight="700" fill="#fff" text-anchor="middle">P</text></svg>')}">` : ""}
 ${FONTS}
 <style>${full ? "body{margin:0}" : ""}${css}</style>${full ? "</head><body>" : ""}`;
@@ -152,7 +154,7 @@ const legal = {
     <h2>Qué datos tratamos</h2><p>Para usar los tests no necesitas registrarte. Tu progreso (aciertos, fallos y preguntas usadas) se guarda solo en tu navegador. Si te suscribes, el pago lo gestiona Stripe Payments Europe, Ltd., que trata tu nombre, email y datos de pago. Nosotros solo recibimos tu email y el estado de tu suscripción.</p>
     <h2>Finalidad y base legal</h2><p>Gestionar tu suscripción y darte acceso al contenido Premium (ejecución del contrato) y cumplir obligaciones fiscales (obligación legal).</p>
     <h2>Conservación</h2><p>Mientras la suscripción esté activa y, después, durante los plazos exigidos por la normativa fiscal.</p>
-    <h2>Cookies y almacenamiento</h2><p>Solo usamos almacenamiento local técnico, necesario para que la app funcione. No usamos cookies publicitarias ni de análisis de terceros.</p>
+    <h2>Cookies y estadísticas</h2><p>Solo usamos almacenamiento local técnico, necesario para que la app funcione. Para saber cuántas visitas recibe la web usamos Cloudflare Web Analytics, que no instala cookies, no guarda tu dirección IP ni te sigue entre sitios web: solo cuenta visitas de forma agregada. No usamos cookies publicitarias.</p>
     <h2>Tus derechos</h2><p>Puedes ejercer los derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo a ${O.email}. También puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p>`],
   "condiciones": ["Condiciones de contratación", `
     <h2>Servicio</h2><p>PlazaFija Premium da acceso a todo el banco de preguntas, simulacros y repaso de fallos mientras la suscripción esté activa.</p>
