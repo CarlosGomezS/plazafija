@@ -38,5 +38,15 @@ export async function onRequestGet({ env }) {
       out[nombre] = `${(p.unit_amount / 100).toFixed(2)} ${String(p.currency).toUpperCase()} · ${p.recurring ? "recurrente cada " + p.recurring.interval : "ERROR: es de pago único, tiene que ser recurrente"} · ${p.active ? "activo" : "ERROR: inactivo"} · ${p.livemode ? "modo real" : "modo prueba"}`;
     } catch (e) { out[nombre] = "Stripe dice: " + e.message; }
   }
+  // Intento real de crear una página de pago (en modo prueba no cobra nada y caduca sola)
+  if (k && env.STRIPE_PRICE_MONTH) {
+    try {
+      const sess = await stripe(env, "POST", "checkout/sessions", {
+        mode: "subscription", line_items: { 0: { price: env.STRIPE_PRICE_MONTH, quantity: 1 } },
+        success_url: "https://example.com/?ok", cancel_url: "https://example.com/?no", allow_promotion_codes: "true", billing_address_collection: "auto", locale: "es"
+      });
+      out.paginaDePago = sess.url ? "se crea bien" : "sin URL";
+    } catch (e) { out.paginaDePago = "Stripe dice: " + e.message; }
+  }
   return json(out);
 }
