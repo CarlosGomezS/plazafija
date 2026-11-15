@@ -57,6 +57,8 @@ for (const [k, b] of Object.entries(BLOCKS)) {
   blocks[k] = { ...b, total: all.filter((q) => q[0] === k).length, free: free.filter((q) => q[0] === k).length };
 }
 const total = all.length;
+// Google Analytics con aviso de cookies: solo se carga si el visitante acepta (src/analitica.js)
+const ANALITICA = `<script src="/analitica.js" defer></script>`;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 const css = readFileSync("src/styles.css", "utf8");
@@ -120,7 +122,7 @@ ${header(false)}
   <section class="seo"><h2>Más temas de Auxiliar Administrativo del Estado</h2>${temaLinks(t.slug)}
   <p><a href="/temario/">Ver el temario completo y cómo es el examen</a></p></section>
 </main>
-${footer(true)}</body></html>`;
+${footer(true)}${ANALITICA}</body></html>`;
 }
 
 function temarioPage() {
@@ -137,7 +139,7 @@ ${header(false)}
   <h2>Bloque II · Actividad administrativa y ofimática (12 temas)</h2><ol style="list-style:none;padding:0;display:grid;gap:10px">${temas.filter((t) => t.b === "II").map(row).join("")}</ol>
   <p><small>Títulos resumidos. El enunciado oficial completo está en el anexo I de la convocatoria publicada en el BOE.</small></p>
 </main>
-${footer(true)}</body></html>`;
+${footer(true)}${ANALITICA}</body></html>`;
 }
 
 function appPage(demo) {
@@ -159,7 +161,7 @@ ${footer(!demo)}
 const BUILD = ${JSON.stringify(BUILD)};
 ${psiJs}
 ${appJs}
-</script>${demo ? "" : "</body></html>"}`;
+</script>${demo ? "" : ANALITICA + "</body></html>"}`;
 }
 
 const deLa = (b) => b.de || (/^(Ley|Constitución|Protección|Administración General)/.test(b.name) ? "de la" : /^Presupuesto/.test(b.name) ? "del" : "de");
@@ -185,7 +187,7 @@ ${header(false)}
   <h2>Tests por tema (Auxiliar Administrativo del Estado)</h2><p><a href="/temario/">Temario completo</a></p>
   <h2>Herramientas</h2><ul>${TOOLS.map((t) => `<li><a href="/herramientas/${t.slug}/">${esc(t.name)}</a></li>`).join("")}</ul></section>
 </main>
-${footer(true)}</body></html>`;
+${footer(true)}${ANALITICA}</body></html>`;
 }
 
 function toolPage(t) {
@@ -204,7 +206,7 @@ ${header(false)}
 </main>
 ${footer(true)}
 <script type="application/ld+json">${JSON.stringify(faqLd)}</script>
-<script>${t.js}</script></body></html>`;
+<script>${t.js}</script>${ANALITICA}</body></html>`;
 }
 
 const O = SITE.owner;
@@ -219,7 +221,7 @@ const legal = {
     <h2>Qué datos tratamos</h2><p>Para usar los tests no necesitas registrarte. Tu progreso (aciertos, fallos y preguntas usadas) se guarda solo en tu navegador. Si te suscribes, el pago lo gestiona Stripe Payments Europe, Ltd., que trata tu nombre, email y datos de pago. Nosotros solo recibimos tu email y el estado de tu suscripción.</p>
     <h2>Finalidad y base legal</h2><p>Gestionar tu suscripción y darte acceso al contenido Premium (ejecución del contrato) y cumplir obligaciones fiscales (obligación legal).</p>
     <h2>Conservación</h2><p>Mientras la suscripción esté activa y, después, durante los plazos exigidos por la normativa fiscal.</p>
-    <h2>Cookies y estadísticas</h2><p>Solo usamos almacenamiento local técnico, necesario para que la app funcione. Para saber cuántas visitas recibe la web usamos Cloudflare Web Analytics, que no instala cookies, no guarda tu dirección IP ni te sigue entre sitios web: solo cuenta visitas de forma agregada. Además, al entrar se registra de forma anónima la página visitada, la web de procedencia, el país y si usas móvil u ordenador, para llevar un recuento de visitas; no se guarda tu dirección IP ni ningún dato que te identifique. No usamos cookies publicitarias.</p>
+    <h2>Cookies y estadísticas</h2><p>Usamos almacenamiento local técnico, necesario para que la app funcione. Además, solo si pulsas «Aceptar» en el aviso de cookies, se carga Google Analytics (Google Ireland Ltd.), que instala cookies propias para medir las visitas de forma agregada; si pulsas «Rechazar» no se carga ni se instala ninguna cookie, y puedes cambiar tu decisión borrando los datos del sitio en tu navegador. Para saber cuántas visitas recibe la web usamos Cloudflare Web Analytics, que no instala cookies, no guarda tu dirección IP ni te sigue entre sitios web: solo cuenta visitas de forma agregada. Además, al entrar se registra de forma anónima la página visitada, la web de procedencia, el país y si usas móvil u ordenador, para llevar un recuento de visitas; no se guarda tu dirección IP ni ningún dato que te identifique. No usamos cookies publicitarias.</p>
     <h2>Tus derechos</h2><p>Puedes ejercer los derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo a ${O.email}. También puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p>`],
   "condiciones": ["Condiciones de contratación", `
     <h2>Servicio</h2><p>PlazaFija Premium da acceso a todo el banco de preguntas, simulacros y repaso de fallos mientras la suscripción esté activa.</p>
@@ -230,7 +232,7 @@ const legal = {
 };
 function legalPage(slug, [title, html]) {
   return `${head({ title: `${title} · ${SITE.name}`, description: `${title} de ${SITE.name}.`, path: `/legal/${slug}/` })}
-${header(false)}<main class="wrap doc"><h1>${title}</h1>${html}</main>${footer(true)}</body></html>`;
+${header(false)}<main class="wrap doc"><h1>${title}</h1>${html}</main>${footer(true)}${ANALITICA}</body></html>`;
 }
 
 // ===== 3. Escribir archivos =====
@@ -246,6 +248,7 @@ const urls = ["/", ...Object.values(blocks).map((b) => `/tests/${b.slug}/`), ...
 const today = new Date().toISOString().slice(0, 10);
 out("dist/sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${SITE.url}${u}</loc><lastmod>${today}</lastmod></url>`).join("\n")}\n</urlset>\n`);
 out(`dist/${SITE.indexNowKey}.txt`, SITE.indexNowKey);
+out("dist/analitica.js", readFileSync("src/analitica.js", "utf8"));
 out("dist/robots.txt", `User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: ${SITE.url}/sitemap.xml\n`);
 out("dist/_headers", `/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  X-Frame-Options: DENY\n`);
 out("functions/_lib/premium-data.js", `// Generado por build.mjs. No editar: edita src/questions.js y vuelve a ejecutar el build.\nexport const PREMIUM = ${JSON.stringify(all)};\n`);
