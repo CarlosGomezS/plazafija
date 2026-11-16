@@ -1,3 +1,4 @@
+import { BLOCKS_2, QUESTIONS_2 } from "./ampliacion-2.js";
 import { BLOCKS_LEGAL, QUESTIONS_LEGAL } from "./ampliacion-legal.js";
 import { BLOCKS_OFI, QUESTIONS_OFI } from "./ampliacion-ofimatica.js";
 
@@ -274,6 +275,6 @@ export const QUESTIONS = [
 // (así no cambian los identificadores ni las preguntas gratuitas ya existentes).
 {
   const psi = BLOCKS.PSI; delete BLOCKS.PSI;
-  Object.assign(BLOCKS, BLOCKS_LEGAL, BLOCKS_OFI, { PSI: psi });
-  QUESTIONS.push(...QUESTIONS_LEGAL, ...QUESTIONS_OFI);
+  Object.assign(BLOCKS, BLOCKS_LEGAL, BLOCKS_2, BLOCKS_OFI, { PSI: psi });
+  QUESTIONS.push(...QUESTIONS_LEGAL, ...QUESTIONS_OFI, ...QUESTIONS_2);
 }

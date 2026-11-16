@@ -43,7 +43,7 @@ export const TEMAS = [
 ];
 
 // Asigna cada pregunta a un tema a partir de su bloque y del artículo citado.
-const art = (ref) => { const m = /Art\.\s*(\d+)/.exec(ref); return m ? +m[1] : null; };
+const art = (ref) => { const m = /Arts?\.\s*(\d+)/.exec(ref); return m ? +m[1] : null; };
 const T = (b, n) => TEMAS.find((x) => x.b === b && x.n === n);
 
 export function temaOf(q) {
@@ -68,6 +68,8 @@ export function temaOf(q) {
     case "LPD": return T("I", 12);
     case "TREBEP": return a != null && ((a >= 14 && a <= 54) || (a >= 93 && a <= 98)) ? T("I", 14) : T("I", 13);
     case "IGU": return T("I", 16);
+    case "GA": return T("I", 6);
+    case "UE": return T("I", 10);
     case "AGE": return T("I", 8);
     case "PRE": return T("I", 15);
     case "ATE": return T("II", 1);
