@@ -202,3 +202,12 @@ test("interés en Premium con pagos en pausa: cuenta y avisa", async () => {
   assert.match(t[0], /anual \(29 €\)[\s\S]*Interesados en Premium: 1/);
   assert.match(t[1], /mensual \(4,99 €\)[\s\S]*Interesados en Premium: 2/);
 });
+
+test("reportar error en una pregunta avisa por Telegram", async () => {
+  const { onRequestPost } = await import("./functions/api/reporte.js");
+  const calls = mockStripe([[/api\.telegram\.org/, () => ({ ok: true })]]);
+  const r = await onRequestPost({ request: req("reporte", { id: "q12", b: "CE", q: "¿Pregunta?", a: "Respuesta", r: "Art. 1 CE", c: "La correcta es otra" }), env: { ...ENV, ...TG, VISITAS: kv() } });
+  assert.equal(r.status, 200);
+  const t = JSON.parse(calls[0].opts.body).text;
+  assert.match(t, /Aviso de error[\s\S]*q12[\s\S]*¿Pregunta\?[\s\S]*La correcta es otra/);
+});

@@ -375,10 +375,29 @@ function answer(i) {
   } else {
     $("#feedback").innerHTML = `
       <div class="expl"><span class="ref">${esc(q.r)}</span><span class="verdict ${ok ? "ok" : "ko"}">${ok ? "Correcta." : "Incorrecta."}</span> ${esc(q.e)}</div>
-      <div class="row" style="margin-top:12px"><span class="hint">${premium() ? "" : remaining() + " preguntas gratis restantes hoy"}</span><button class="btn primary" id="next" type="button">${last ? "Ver resultado" : "Siguiente"}</button></div>`;
+      <div class="row" style="margin-top:12px"><span class="hint">${premium() ? "" : remaining() + " preguntas gratis restantes hoy"}</span><button class="btn primary" id="next" type="button">${last ? "Ver resultado" : "Siguiente"}</button></div>
+      <div id="report"><button class="link" id="rep-open" type="button">⚑ ¿Ves un error en esta pregunta?</button></div>`;
+    $("#rep-open").onclick = () => openReport(q);
   }
   $("#next").onclick = () => { if (last) return results(); if (!premium() && remaining() === 0) { results(); return openPay(); } T.i++; question(); };
   $("#next").focus();
+}
+
+// ===== Reportar un error en una pregunta =====
+const reported = new Set();
+function openReport(q) {
+  const box = $("#report");
+  if (reported.has(q.id || q.q)) { box.innerHTML = '<p class="hint">Ya nos has avisado de esta pregunta. ¡Gracias!</p>'; return; }
+  box.innerHTML = `<label class="hint" for="rep-txt">¿Qué está mal? (opcional)</label>
+    <textarea id="rep-txt" rows="3" maxlength="600" style="width:100%;margin-top:6px;font:inherit;padding:8px;border-radius:8px;border:1px solid #ccd"></textarea>
+    <div class="row" style="margin-top:8px"><button class="link" id="rep-cancel" type="button">Cancelar</button><button class="btn" id="rep-send" type="button">Enviar aviso</button></div>`;
+  $("#rep-cancel").onclick = () => { box.innerHTML = '<button class="link" id="rep-open" type="button">⚑ ¿Ves un error en esta pregunta?</button>'; $("#rep-open").onclick = () => openReport(q); };
+  $("#rep-send").onclick = async () => {
+    $("#rep-send").disabled = true;
+    try { await api("reporte", { id: q.id || "", b: q.b, q: q.q, a: q.o[q.a], r: q.r, c: $("#rep-txt").value }); } catch (e) {}
+    reported.add(q.id || q.q);
+    box.innerHTML = '<p class="hint">Gracias, lo revisaremos y lo corregiremos si hace falta.</p>';
+  };
 }
 
 // ===== Resultados =====
