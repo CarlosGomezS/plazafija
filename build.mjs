@@ -1,6 +1,6 @@
 // Build de PlazaFija: node build.mjs
 // Genera dist/ (web pública), functions/_lib/premium-data.js (banco completo, solo servidor) y demo/index.html (demo de un archivo).
-import { readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, readdirSync } from "node:fs";
 import { BLOCKS, QUESTIONS } from "./src/questions.js";
 import { TOOLS } from "./src/tools.js";
 import { TEMAS, CONVOCATORIA, temaOf } from "./src/temario.js";
@@ -120,7 +120,50 @@ ${header(false)}
   ${qaHtml(t.free)}
   <a class="btn primary cta" href="/">Practicar con ${total} preguntas</a>
   <section class="seo"><h2>Más temas de Auxiliar Administrativo del Estado</h2>${temaLinks(t.slug)}
-  <p><a href="/temario/">Ver el temario completo y cómo es el examen</a></p></section>
+  <p><a href="/temario/">Ver el temario completo y cómo es el examen</a> · <a href="/examenes/">Exámenes oficiales resueltos</a></p></section>
+</main>
+${footer(true)}${ANALITICA}</body></html>`;
+}
+
+// ===== Exámenes oficiales del INAP (dominio público, art. 13 TRLPI) =====
+const EXAMENES = ["2024", "2025", "2023"].map((y) => JSON.parse(readFileSync(`src/examenes/aux-${y}.json`, "utf8")));
+const exLinks = (except) => `<ul>${EXAMENES.filter((x) => x.slug !== except).map((x) => `<li><a href="/examenes/${x.slug}/">${esc(x.titulo)} resuelto</a></li>`).join("")}</ul>`;
+function examPage(x) {
+  const total = x.secciones.reduce((n, s) => n + s.preguntas.length, 0);
+  const anuladas = x.secciones.flatMap((s) => s.preguntas).filter((q) => q.a === null).length;
+  const conExpl = x.secciones.some((s) => s.preguntas.some((q) => q.e));
+  const title = `${x.titulo} resuelto: preguntas y respuestas oficiales`;
+  const desc = `${x.titulo} (${x.fecha}) con las ${total} preguntas oficiales del INAP y la respuesta correcta de la plantilla definitiva${conExpl ? ", explicada pregunta a pregunta" : ""}. Hazlo cronometrado gratis.`;
+  let lastImg = "";
+  const secs = x.secciones.map((s) => `<h2>${esc(s.nombre)}</h2>` + s.preguntas.map((q) => {
+    const img = q.img && q.img !== lastImg ? `<figure class="tabla"><a href="/examenes/img/${q.img}" target="_blank" rel="noopener"><img src="/examenes/img/${q.img}" alt="Tabla de datos de las preguntas siguientes" loading="lazy" width="1136"></a></figure>` : "";
+    if (q.img) lastImg = q.img;
+    const sol = q.a === null ? `<b>Pregunta anulada por el tribunal.</b>` : `<b>Respuesta correcta: ${"abcd"[q.a]}) ${esc(q.o[q.a])}</b>${q.e ? " " + esc(q.e) : ""}`;
+    return `${img}<article class="qa"><b>${q.n}. ${esc(q.q)}</b><ol type="a">${q.o.map((o) => `<li>${esc(o)}</li>`).join("")}</ol><details><summary>Ver solución</summary><p>${sol}</p></details></article>`;
+  }).join("\n")).join("\n");
+  return `${head({ title, description: desc, path: `/examenes/${x.slug}/` })}
+${header(false)}
+<main class="wrap doc">
+  <span class="eyebrow">Examen oficial · INAP · ${esc(x.fecha)}</span>
+  <h1>${esc(x.titulo)} resuelto</h1>
+  <p class="lede">Las ${total} preguntas oficiales del examen de Auxiliar Administrativo del Estado celebrado el ${esc(x.fecha)} (${esc(x.convocatoria)}), con la respuesta de la plantilla definitiva del INAP${anuladas ? ` (${anuladas} anulada${anuladas > 1 ? "s" : ""} por el tribunal)` : ""}${conExpl ? " y la explicación de cada una" : ""}.</p>
+  <a class="btn primary cta" href="/?examen=${x.anio}">Hacer este examen cronometrado (90 min, gratis)</a>
+  <p><small>Examen oficial de dominio público (artículo 13 del texto refundido de la Ley de Propiedad Intelectual), publicado por el Instituto Nacional de Administración Pública. Las respuestas son las de la plantilla definitiva; alguna pregunta puede haber quedado desactualizada por cambios normativos o de versiones de programas posteriores al examen.</small></p>
+  ${secs}
+  <a class="btn primary cta" href="/?examen=${x.anio}">Hacer este examen cronometrado</a>
+  <section class="seo"><h2>Más exámenes oficiales</h2>${exLinks(x.slug)}<p><a href="/examenes/">Todos los exámenes oficiales</a> · <a href="/temario/">Tests por tema</a></p></section>
+</main>
+${footer(true)}${ANALITICA}</body></html>`;
+}
+function examenesPage() {
+  return `${head({ title: "Exámenes oficiales de Auxiliar Administrativo del Estado resueltos (2023, 2024 y 2025)", description: "Exámenes oficiales del INAP de Auxiliar Administrativo del Estado con las respuestas de la plantilla definitiva. Practícalos online y cronometrados gratis.", path: "/examenes/" })}
+${header(false)}
+<main class="wrap doc">
+  <span class="eyebrow">Auxiliar Administrativo del Estado</span>
+  <h1>Exámenes oficiales resueltos</h1>
+  <p class="lede">Los exámenes reales de las últimas convocatorias del INAP, con todas sus preguntas y la respuesta de la plantilla definitiva. Puedes estudiarlos aquí o hacerlos cronometrados en la app, con la misma penalización que en el examen.</p>
+  <ul style="list-style:none;padding:0;display:grid;gap:12px">${EXAMENES.map((x) => `<li><a href="/examenes/${x.slug}/"><b>${esc(x.titulo)}</b></a><br><small>${esc(x.fecha)} · ${esc(x.convocatoria)}</small> · <a href="/?examen=${x.anio}">Hacerlo cronometrado</a></li>`).join("")}</ul>
+  <section class="seo"><p><a href="/temario/">Tests por tema del temario oficial</a></p></section>
 </main>
 ${footer(true)}${ANALITICA}</body></html>`;
 }
@@ -143,11 +186,12 @@ ${footer(true)}${ANALITICA}</body></html>`;
 }
 
 function appPage(demo) {
-  const BUILD = { demo, pagos: SITE.pagosActivos, blocks, total, freePerDay: SITE.freePerDay, prices: SITE.prices, free: demo ? all : free };
+  const BUILD = { demo, examenes: EXAMENES.map((x) => ({ anio: x.anio, titulo: x.titulo, fecha: x.fecha })), pagos: SITE.pagosActivos, blocks, total, freePerDay: SITE.freePerDay, prices: SITE.prices, free: demo ? all : free };
   const seo = `<section class="wrap seo" aria-labelledby="seo-title">
     <h2 id="seo-title">Tests de oposiciones por ley</h2>
     <p>Practica gratis con preguntas tipo test de todo el temario de Auxiliar Administrativo del Estado y de la mayoría de oposiciones de la Administración: Constitución Española, Leyes 39/2015 y 40/2015, TREBEP, transparencia, protección de datos, igualdad, administración electrónica, registro y archivo, y ofimática (Windows 11, Word, Excel, Access y Outlook). Cada pregunta incluye la solución explicada y su referencia.</p>
     ${demo ? "" : `<ul>${Object.values(blocks).map((b) => `<li><a href="/tests/${b.slug}/">Test ${deLa(b)} ${esc(b.name)}</a></li>`).join("")}</ul>
+    <h2>Exámenes oficiales resueltos</h2>${exLinks()}
     <h2>Tests por tema de Auxiliar Administrativo del Estado</h2><p><a href="/temario/">Temario completo (28 temas) y cómo es el examen</a></p>${temaLinks()}
     <h2>Herramientas para opositores</h2><ul>${TOOLS.map((t) => `<li><a href="/herramientas/${t.slug}/">${esc(t.name)}</a></li>`).join("")}</ul>`}
   </section>`;
@@ -242,9 +286,16 @@ out("dist/index.html", appPage(false));
 for (const [k, b] of Object.entries(blocks)) out(`dist/tests/${b.slug}/index.html`, testPage(k, b));
 for (const t of TOOLS) out(`dist/herramientas/${t.slug}/index.html`, toolPage(t));
 out("dist/temario/index.html", temarioPage());
+out("dist/examenes/index.html", examenesPage());
+for (const x of EXAMENES) {
+  out(`dist/examenes/${x.slug}/index.html`, examPage(x));
+  out(`dist/examenes/aux-${x.anio}.json`, JSON.stringify(x));
+}
+mkdirSync("dist/examenes/img", { recursive: true });
+for (const f of readdirSync("src/examenes/img")) copyFileSync(`src/examenes/img/${f}`, `dist/examenes/img/${f}`);
 for (const t of temasConPagina) out(`dist/temario/${t.slug}/index.html`, temaPage(t));
 for (const [slug, data] of Object.entries(legal)) out(`dist/legal/${slug}/index.html`, legalPage(slug, data));
-const urls = ["/", ...Object.values(blocks).map((b) => `/tests/${b.slug}/`), ...TOOLS.map((t) => `/herramientas/${t.slug}/`), "/temario/", ...temasConPagina.map((t) => `/temario/${t.slug}/`), ...Object.keys(legal).map((s) => `/legal/${s}/`)];
+const urls = ["/", ...Object.values(blocks).map((b) => `/tests/${b.slug}/`), ...TOOLS.map((t) => `/herramientas/${t.slug}/`), "/examenes/", ...EXAMENES.map((x) => `/examenes/${x.slug}/`), "/temario/", ...temasConPagina.map((t) => `/temario/${t.slug}/`), ...Object.keys(legal).map((s) => `/legal/${s}/`)];
 const today = new Date().toISOString().slice(0, 10);
 out("dist/sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${SITE.url}${u}</loc><lastmod>${today}</lastmod></url>`).join("\n")}\n</urlset>\n`);
 out(`dist/${SITE.indexNowKey}.txt`, SITE.indexNowKey);

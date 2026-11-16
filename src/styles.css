@@ -129,3 +129,7 @@ footer a{color:var(--muted)}
 .field select{font:inherit;font-size:1rem;padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
 .tool{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:520px){.tool{grid-template-columns:1fr}}
+
+/* Tablas de datos de los exámenes oficiales */
+figure.tabla { margin: 0 0 14px; overflow-x: auto; }
+figure.tabla img { display: block; max-width: 100%; height: auto; border: 1px solid #dfe3ea; border-radius: 8px; background: #fff; }

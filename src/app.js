@@ -54,6 +54,7 @@ function home() {
     <button class="btn" id="go-sim" type="button"><span>Simulacro de examen<br><small>25 preguntas · 25 min · −1/3 por error</small></span>${pro ? "" : '<span class="lock">Premium</span>'}</button>
     <button class="btn" id="go-fails" type="button" ${fails ? "" : "disabled"}>Repasar mis fallos <small>${fails} pendiente${fails === 1 ? "" : "s"}</small></button>
     <button class="btn" id="go-psi" type="button">Psicotécnicos <small>Series y cálculo</small></button>
+    <button class="btn" id="go-exam" type="button">Exámenes oficiales <small>INAP 2023, 2024 y 2025 · 90 min · gratis</small></button>
   </div>
   <section style="display:flex;flex-direction:column;gap:10px">
     <h2>Por bloques</h2>
@@ -72,6 +73,7 @@ function home() {
   $("#go-sim").onclick = () => start("sim");
   $("#go-fails").onclick = () => start("fails");
   $("#go-psi").onclick = () => start("block", "PSI");
+  $("#go-exam").onclick = openExams;
   view.querySelectorAll("[data-block]").forEach((b) => (b.onclick = () => start("block", b.dataset.block)));
   window.scrollTo(0, 0);
 }
@@ -98,16 +100,17 @@ function tick() {
   if (el) el.textContent = String(Math.floor(left / 60000)).padStart(2, "0") + ":" + String(Math.floor(left / 1000) % 60).padStart(2, "0");
   if (left === 0) { clearInterval(timer); results(); }
 }
-function title() { return T.mode === "block" ? BLOCKS[T.block].name : T.mode === "sim" ? "Simulacro" : T.mode === "fails" ? "Repaso de fallos" : "Test rápido"; }
+function title() { if (T.mode === "exam") return T.titulo; return T.mode === "block" ? BLOCKS[T.block].name : T.mode === "sim" ? "Simulacro" : T.mode === "fails" ? "Repaso de fallos" : "Test rápido"; }
 function question() {
   const q = T.list[T.i], rem = remaining();
   view.innerHTML = `
   <div class="qhead">
     <span class="eyebrow">${esc(title())} · Pregunta <b>${T.i + 1}</b> de ${T.list.length}</span>
-    ${T.end ? '<span class="timer" id="timer">25:00</span>' : (premium() ? "" : `<span class="hint">${rem} gratis hoy</span>`)}
+    ${T.end ? '<span class="timer" id="timer"></span>' : (premium() ? "" : `<span class="hint">${rem} gratis hoy</span>`)}
   </div>
   <div class="bar"><i style="width:${(T.i / T.list.length) * 100}%"></i></div>
   <article class="qcard">
+    ${q.img ? `<figure class="tabla"><a href="/examenes/img/${esc(q.img)}" target="_blank" rel="noopener"><img src="/examenes/img/${esc(q.img)}" alt="Tabla de datos del examen (toca para ampliar)"></a><figcaption class="hint">Toca la tabla para verla en grande</figcaption></figure>` : ""}
     <p class="qtext">${esc(q.q)}</p>
     <div class="opts">${q.o.map((o, i) => `<button class="opt" type="button" data-i="${i}" id="opt-${i}"><span class="k">${letters[i]}</span><span>${esc(o)}</span></button>`).join("")}</div>
     <div id="feedback"></div>
@@ -120,11 +123,12 @@ function question() {
 }
 function answer(i) {
   const q = T.list[T.i];
-  if (!premium()) { if (remaining() === 0) return openPay(); S.used++; }
+  const exam = q.b === "EXAM";
+  if (!premium() && !exam) { if (remaining() === 0) return openPay(); S.used++; }
   const ok = i === q.a;
   T.picks.push({ q, i, ok });
   const st = S.stats[q.b] || (S.stats[q.b] = { ok: 0, ko: 0 }); ok ? st.ok++ : st.ko++;
-  if (q.b !== "PSI") { if (ok) S.fails = S.fails.filter((x) => x !== q.id); else if (!S.fails.includes(q.id)) S.fails.push(q.id); }
+  if (q.b !== "PSI" && !exam) { if (ok) S.fails = S.fails.filter((x) => x !== q.id); else if (!S.fails.includes(q.id)) S.fails.push(q.id); }
   save();
   view.querySelectorAll(".opt").forEach((b) => { b.disabled = true; const n = +b.dataset.i; if (n === q.a) b.classList.add("right"); else if (n === i) b.classList.add("wrong"); });
   const last = T.i === T.list.length - 1;
@@ -137,8 +141,30 @@ function answer(i) {
       <div id="report"><button class="link" id="rep-open" type="button">⚑ ¿Ves un error en esta pregunta?</button></div>`;
     $("#rep-open").onclick = () => openReport(q);
   }
-  $("#next").onclick = () => { if (last) return results(); if (!premium() && remaining() === 0) { results(); return openPay(); } T.i++; question(); };
+  $("#next").onclick = () => { if (last) return results(); if (!premium() && !exam && remaining() === 0) { results(); return openPay(); } T.i++; question(); };
   $("#next").focus();
+}
+
+// ===== Exámenes oficiales del INAP =====
+function openExams() {
+  openSheet(`<span class="eyebrow">Exámenes oficiales del INAP</span>
+    <h2 id="sheet-title">Haz un examen real, cronometrado</h2>
+    <p class="hint">90 minutos, cada error resta un tercio, como el día del examen. Al terminar verás tus fallos con la respuesta oficial. Gratis y sin límite.</p>
+    <div style="display:grid;gap:10px;margin-top:12px">${BUILD.examenes.map((x) => `<button class="btn" type="button" data-ex="${x.anio}">${esc(x.titulo)} <small>${esc(x.fecha)}</small></button>`).join("")}</div>
+    <div class="row"><a class="link" href="/examenes/">Ver los exámenes resueltos</a><button class="link" id="ex-close" type="button">Cerrar</button></div>`);
+  sheet.querySelectorAll("[data-ex]").forEach((b) => (b.onclick = () => { closeSheet(); startExam(b.dataset.ex); }));
+  $("#ex-close").onclick = closeSheet;
+}
+async function startExam(anio) {
+  let x;
+  try { const r = await fetch(`/examenes/aux-${anio}.json`); x = await r.json(); } catch (e) { toast("No se pudo cargar el examen. Inténtalo de nuevo."); return home(); }
+  const list = x.secciones.filter((s) => s.id === "1" || s.id === "2").flatMap((s) => s.preguntas.filter((q) => q.a !== null).map((q) => ({
+    b: "EXAM", q: q.q, o: q.o, a: q.a, e: q.e || "Respuesta según la plantilla definitiva del INAP.", r: `${x.anio} · ${s.nombre} · pregunta ${q.n}`, id: "", img: q.img || ""
+  })));
+  clearInterval(timer);
+  T = { mode: "exam", titulo: "Examen oficial " + x.anio, list, i: 0, picks: [], end: Date.now() + 90 * 60000 };
+  timer = setInterval(tick, 1000);
+  question();
 }
 
 // ===== Reportar un error en una pregunta =====
@@ -178,11 +204,11 @@ function results() {
     <div class="item"><p><b>${esc(p.q.q)}</b></p><p>Tu respuesta: ${esc(p.q.o[p.i])}</p><p class="ans">Correcta: ${esc(p.q.o[p.q.a])}</p>
     <div class="expl"><span class="ref">${esc(p.q.r)}</span>${esc(p.q.e)}</div></div>`).join("")}</section>` : ""}
   <div class="actions">
-    <button class="btn primary" id="again" type="button">Hacer otro test <small>${T.mode === "block" ? esc(BLOCKS[T.block].name) : "mezclado"}</small></button>
+    <button class="btn primary" id="again" type="button">${T.mode === "exam" ? "Hacer otro examen oficial" : `Hacer otro test <small>${T.mode === "block" ? esc(BLOCKS[T.block].name) : "mezclado"}</small>`}</button>
     <button class="btn" id="back" type="button">Volver al inicio</button>
   </div>`;
   const m = T.mode, b = T.block;
-  $("#again").onclick = () => start(m === "sim" && !premium() ? "mix" : m, b);
+  $("#again").onclick = () => (m === "exam" ? openExams() : start(m === "sim" && !premium() ? "mix" : m, b));
   $("#back").onclick = home;
   if ($("#res-pro")) $("#res-pro").onclick = () => openPay("Elige tu plan");
   window.scrollTo(0, 0);
@@ -301,8 +327,10 @@ $("#home-btn").onclick = home;
 
 (async function init() {
   load(); remaining(); home();
-  if (BUILD.demo) return;
   const params = new URLSearchParams(location.search);
+  const ex = params.get("examen");
+  if (ex && BUILD.examenes.some((x) => x.anio === ex)) { history.replaceState(null, "", location.pathname); startExam(ex); }
+  if (BUILD.demo) return;
   const sid = params.get("session_id");
   if (sid || params.has("pago")) history.replaceState(null, "", location.pathname);
   if (sid) {
