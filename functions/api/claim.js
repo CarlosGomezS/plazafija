@@ -35,6 +35,6 @@ async function avisarSuscripcion(env, s, email) {
     let total = null;
     if (env.VISITAS) { total = (+(await env.VISITAS.get("suscripciones")) || 0) + 1; await env.VISITAS.put("suscripciones", String(total)); }
     const prueba = s.livemode === false ? "\n🧪 Pago de PRUEBA (no es dinero real)" : "";
-    await avisarTelegram(env, `💰 Nueva suscripción ${plan}${importe ? " · " + importe : ""}\n👤 ${email ? oculta(email) : "sin email"}${total ? "\n📈 Suscripciones registradas: " + total : ""}${prueba}`);
+    await avisarTelegram(env, `💰 Nueva suscripción ${plan}${importe ? " · " + importe : ""}\n👤 ${email ? oculta(email) : "sin email"}${total ? "\n📈 Suscripciones registradas: " + total : ""}${prueba}`, { tags: ["moneybag"], priority: 5 });
   } catch { /* el aviso nunca debe impedir el acceso */ }
 }

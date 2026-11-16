@@ -5,6 +5,8 @@
 // Almacén: KV con el nombre VISITAS (lo crea el flujo). Sin él, avisa igual pero sin contador.
 // No se guarda la IP ni nada que identifique a la persona: solo totales.
 
+import { enviarNtfy } from "../_lib/core.js";
+
 const TZ = "Europe/Madrid";
 const AVISO_CADA_UNA_HASTA = 150; // a partir de aquí, en un mismo día, avisa cada 10 visitas
 const BOTS = /bot|crawl|spider|slurp|headless|lighthouse|preview|facebookexternalhit|whatsapp|telegram|curl|wget|python|monitor/i;
@@ -28,6 +30,7 @@ const bandera = (cc) => (/^[A-Z]{2}$/.test(cc || "") ? String.fromCodePoint(...[
 const n = (x) => x.toLocaleString("es-ES");
 
 async function telegram(env, text) {
+  await enviarNtfy(env, text, { tags: ["eyes"], priority: 2 });
   if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) return "faltan las claves de Telegram";
   const r = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: "POST", headers: { "content-type": "application/json" },

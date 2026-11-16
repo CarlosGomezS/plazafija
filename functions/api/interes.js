@@ -10,6 +10,6 @@ export async function onRequestPost({ request, env }) {
   try { plan = JSON.parse(await request.text()).plan === "month" ? "mensual (4,99 €)" : "anual (29 €)"; } catch { return ok(); }
   let total = null;
   try { if (env.VISITAS) { total = (+(await env.VISITAS.get("interesados")) || 0) + 1; await env.VISITAS.put("interesados", String(total)); } } catch {}
-  await avisarTelegram(env, `⭐ Alguien ha pulsado «Suscribirme» · plan ${plan}${total ? `\n📈 Interesados en Premium: ${total}` : ""}\n(Los pagos están en pausa: no se ha cobrado nada)`);
+  await avisarTelegram(env, `⭐ Alguien ha pulsado «Suscribirme» · plan ${plan}${total ? `\n📈 Interesados en Premium: ${total}` : ""}\n(Los pagos están en pausa: no se ha cobrado nada)`, { tags: ["star"], priority: 4 });
   return ok();
 }

@@ -1,5 +1,5 @@
 // POST /api/checkout {plan: "month"|"year"} → crea la sesión de pago de Stripe y devuelve su URL
-import { json, isConfigured, stripe, body } from "../_lib/core.js";
+import { json, isConfigured, stripe, body, notificar } from "../_lib/core.js";
 
 export async function onRequestPost({ request, env }) {
   if (!isConfigured(env)) return json({ error: "Pagos aún no configurados", demo: true }, 503);
@@ -17,6 +17,7 @@ export async function onRequestPost({ request, env }) {
       locale: "es",
       managed_payments: { enabled: "false" } // Stripe normal: el vendedor es el titular (sin Managed Payments)
     });
+    await notificar(env, `🛒 Alguien va a pagar · plan ${plan === "month" ? "mensual (4,99 €)" : "anual (29 €)"}\nHa abierto la página de pago de Stripe.`, { tags: ["shopping_cart"], priority: 4 });
     return json({ url: session.url });
   } catch (e) {
     console.error("Stripe checkout:", e.message);

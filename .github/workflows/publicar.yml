@@ -39,7 +39,9 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: |
+          if [ -n "$NTFY_TOPIC" ]; then printf '%s' "$NTFY_TOPIC" | npx --yes wrangler@3 pages secret put NTFY_TOPIC --project-name plazafija >/dev/null && echo "Avisos ntfy: activados"; else echo "::warning::Falta el secreto NTFY_TOPIC en GitHub: no se enviarán avisos a ntfy."; fi
           buscar() { npx --yes wrangler@3 kv namespace list | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const a=JSON.parse(s.slice(s.indexOf("[")));const n=a.find(x=>/^(plazafija-)?visitas$/.test(x.title));if(n)console.error("Almacén: "+n.title);console.log(n?n.id:"")}catch{console.log("")}})'; }
           id=$(buscar)
           if [ -z "$id" ]; then npx --yes wrangler@3 kv namespace create visitas || true; id=$(buscar); fi
@@ -63,7 +65,9 @@ jobs:
           STRIPE_PRICE_MONTH: ${{ secrets.STRIPE_PRICE_MONTH }}
           STRIPE_PRICE_YEAR: ${{ secrets.STRIPE_PRICE_YEAR }}
           TOKEN_SECRET: ${{ secrets.TOKEN_SECRET }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
         run: |
+          if [ -n "$STRIPE_WEBHOOK_SECRET" ]; then printf '%s' "$STRIPE_WEBHOOK_SECRET" | npx --yes wrangler@3 pages secret put STRIPE_WEBHOOK_SECRET --project-name plazafija >/dev/null && echo "Webhook de Stripe: activado"; fi
           faltan=""
           for v in STRIPE_SECRET_KEY STRIPE_PRICE_MONTH STRIPE_PRICE_YEAR TOKEN_SECRET; do
             val="${!v}"

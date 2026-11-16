@@ -145,6 +145,9 @@ function answer(i) {
   $("#next").focus();
 }
 
+// ===== Eventos de uso (te avisan por Telegram y ntfy) =====
+function evento(t, d) { try { if (!BUILD.demo) navigator.sendBeacon("/api/evento", new Blob([JSON.stringify({ t, d: d || {} })], { type: "application/json" })); } catch (e) {} }
+
 // ===== Exámenes oficiales del INAP =====
 function openExams() {
   openSheet(`<span class="eyebrow">Exámenes oficiales del INAP</span>
@@ -164,6 +167,7 @@ async function startExam(anio) {
   clearInterval(timer);
   T = { mode: "exam", titulo: "Examen oficial " + x.anio, list, i: 0, picks: [], end: Date.now() + 90 * 60000 };
   timer = setInterval(tick, 1000);
+  evento("examen_inicio", { anio: x.anio });
   question();
 }
 
@@ -190,6 +194,7 @@ function results() {
   const n = T.list.length, ok = T.picks.filter((p) => p.ok).length, ko = T.picks.filter((p) => !p.ok).length, blank = n - T.picks.length;
   const nota = Math.max(0, (ok - ko / 3) / n * 10);
   const wrong = T.picks.filter((p) => !p.ok);
+  if (T.picks.length) evento(T.mode === "exam" ? "examen_fin" : "test_fin", { anio: (T.titulo || "").replace(/\D/g, ""), modo: title(), nota: nota.toFixed(2).replace(".", ","), ok, ko, blank });
   view.innerHTML = `
   <section><span class="eyebrow">${esc(title())} terminado</span><h1>${nota >= 5 ? "Aprobado" : "Sigue practicando"}</h1>
   <p class="lede">Nota calculada como en el examen de la AGE: cada error resta un tercio de acierto y las preguntas en blanco no puntúan.</p></section>
@@ -223,6 +228,8 @@ overlay.onclick = (e) => { if (e.target === overlay) closeSheet(); };
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !overlay.hidden) closeSheet(); });
 
 function openPay(reason) {
+  evento("planes_ver", { motivo: reason || "límite diario" });
+  if (!reason) evento("limite_diario");
   openSheet(`
     <span class="eyebrow">${esc(reason || "Has usado tus preguntas gratis de hoy")}</span>
     <h2 id="sheet-title">Estudia sin límites con PlazaFija Premium</h2>
@@ -332,6 +339,7 @@ $("#home-btn").onclick = home;
   if (ex && BUILD.examenes.some((x) => x.anio === ex)) { history.replaceState(null, "", location.pathname); startExam(ex); }
   if (BUILD.demo) return;
   const sid = params.get("session_id");
+  if (params.get("pago") === "cancelado") evento("pago_abandonado");
   if (sid || params.has("pago")) history.replaceState(null, "", location.pathname);
   if (sid) {
     try { await activate(await api("claim", { session_id: sid })); home(); welcome(); }

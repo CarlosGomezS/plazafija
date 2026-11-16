@@ -21,6 +21,6 @@ export async function onRequestPost({ request, env }) {
 ✅ Respuesta que da la web: ${corta(d.a, 200)}
 📎 Referencia: ${corta(d.r, 80)}
 💬 Comentario: ${corta(d.c, 600) || "(sin comentario)"}`;
-  await avisarTelegram(env, texto);
+  await avisarTelegram(env, texto, { tags: ["warning"], priority: 3 });
   return json({ ok: true });
 }

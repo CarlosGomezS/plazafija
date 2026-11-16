@@ -211,3 +211,33 @@ test("reportar error en una pregunta avisa por Telegram", async () => {
   const t = JSON.parse(calls[0].opts.body).text;
   assert.match(t, /Aviso de error[\s\S]*q12[\s\S]*¿Pregunta\?[\s\S]*La correcta es otra/);
 });
+
+test("los avisos también van a ntfy si hay NTFY_TOPIC", async () => {
+  const { onRequestPost } = await import("./functions/api/evento.js");
+  const calls = mockStripe([[/api\.telegram\.org/, () => ({ ok: true })], [/ntfy\.sh/, () => ({ ok: true })]]);
+  const r = new Request("https://x.test/api/evento", { method: "POST", body: JSON.stringify({ t: "examen_fin", d: { anio: "2024", nota: "6,50", ok: 70, ko: 20, blank: 19 } }), headers: { "content-type": "application/json", "user-agent": "Mozilla/5.0" } });
+  await onRequestPost({ request: r, env: { ...TG, NTFY_TOPIC: "plazafija-prueba", VISITAS: kv() } });
+  const n = calls.find((c) => /ntfy/.test(c.url)); assert.ok(n);
+  const b = JSON.parse(n.opts.body);
+  assert.equal(b.topic, "plazafija-prueba"); assert.match(b.title, /Examen oficial 2024 terminado · nota 6,50/); assert.match(b.message, /Aciertos 70/);
+  assert.ok(calls.some((c) => /telegram/.test(c.url)));
+  const bad = new Request("https://x.test/api/evento", { method: "POST", body: JSON.stringify({ t: "lo_que_sea" }), headers: { "content-type": "application/json", "user-agent": "Mozilla/5.0" } });
+  assert.equal((await onRequestPost({ request: bad, env: { ...TG } })).status, 400);
+});
+
+test("webhook de Stripe: comprueba la firma y avisa de cancelaciones y pagos fallidos", async () => {
+  const wh = await import("./functions/api/stripe-webhook.js");
+  const secret = "whsec_prueba", t = Math.floor(Date.now() / 1000);
+  const ev = { type: "customer.subscription.updated", livemode: true, data: { object: { cancel_at_period_end: true, current_period_end: t + 86400 * 10, items: { data: [{ price: { recurring: { interval: "month" } } }] } }, previous_attributes: { cancel_at_period_end: false } } };
+  const payload = JSON.stringify(ev);
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = [...new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${t}.${payload}`)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const calls = mockStripe([[/api\.telegram\.org/, () => ({ ok: true })]]);
+  const mk = (s) => new Request("https://x.test/api/stripe-webhook", { method: "POST", body: payload, headers: { "stripe-signature": s } });
+  assert.equal((await wh.onRequestPost({ request: mk(`t=${t},v1=deadbeef`), env: { ...TG, STRIPE_WEBHOOK_SECRET: secret } })).status, 400);
+  assert.equal((await wh.onRequestPost({ request: mk(`t=${t},v1=${sig}`), env: { ...TG, STRIPE_WEBHOOK_SECRET: secret } })).status, 200);
+  assert.match(JSON.parse(calls[0].opts.body).text, /Suscripción cancelada · mensual[\s\S]*Mantiene el acceso/);
+  assert.match(wh.mensaje({ type: "invoice.payment_failed", data: { object: { amount_due: 499, customer_email: "pepe@x.es" } } })[0], /Pago fallido · 4,99 €[\s\S]*pe\*\*\*@x\.es/);
+  assert.equal(wh.mensaje({ type: "invoice.paid", data: { object: { billing_reason: "subscription_create" } } }), null);
+  assert.match(wh.mensaje({ type: "invoice.paid", data: { object: { billing_reason: "subscription_cycle", amount_paid: 2900, lines: { data: [{ price: { recurring: { interval: "year" } } }] } } } })[0], /Renovación cobrada · anual · 29,00 €/);
+});
