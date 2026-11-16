@@ -16,7 +16,7 @@ const SITE = {
   indexNowKey: "97ad9d03b5a941ebaad1bc1ff95c3b04",
   // false = pagos en pausa: el botón «Suscribirme» no cobra; registra el interés y te avisa por Telegram.
   // Ponlo a true cuando las claves reales de Stripe estén guardadas en GitHub.
-  pagosActivos: false,
+  pagosActivos: true,
   googleVerification: "YEgrrXAVfYxEi9-HV_-qDhrscKqbmkbSR4CYfcGpYac",
   prices: { month: "4,99 €", year: "29 €", yearMonthly: "2,42 €" },
   // Tus datos legales (LSSI) NO van en el repositorio: se leen de las variables de Cloudflare Pages (OWNER_NAME, OWNER_NIF, OWNER_ADDRESS, OWNER_EMAIL)
