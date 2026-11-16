@@ -51,6 +51,7 @@ export function temaOf(q) {
   const a = art(ref);
   switch (block) {
     case "CE":
+      if (/Art\. 54 CE/.test(ref)) return T("I", 3);
       if (/Título II\b/.test(ref) || /Título IX/.test(ref)) return T("I", 2);
       if (/Título VIII/.test(ref)) return T("I", 9);
       if (a == null) return T("I", 1);
